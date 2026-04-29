@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Ekonomi — Bappeda Kabupaten Malang</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* ===================== THEME VARIABLES ===================== */
+:root {
+  --blue:#1565C0; --blue-mid:#1976D2;
+  --teal:#00897B; --gold:#F9A825; --gold-light:#FFD54F;
+  --red:#E53935; --purple:#7B1FA2; --green:#2E7D32;
+}
+[data-theme="dark"]        { --bg:#0D1B2A; --card:#0F2035; --card2:#132540; --sidebar:#0B1E3D; --border:rgba(255,255,255,0.07); --text:#E8EDF2; --muted:#7A8FA6; --dim:#4A5E72; }
+[data-theme="slate"]       { --bg:#111827; --card:#1F2937; --card2:#243040; --sidebar:#0F1623; --border:rgba(255,255,255,0.08); --text:#F9FAFB; --muted:#9CA3AF; --dim:#4B5563; }
+[data-theme="navy-gold"]   { --bg:#06111F; --card:#081828; --card2:#0B1F30; --sidebar:#040E18; --border:rgba(249,168,37,0.12); --text:#F0E6CC; --muted:#8A7A5A; --dim:#4A3E2A; }
+[data-theme="forest"]      { --bg:#0A1A0E; --card:#0D2012; --card2:#102818; --sidebar:#071208; --border:rgba(46,160,67,0.12); --text:#D4EDDA; --muted:#6A9E72; --dim:#3A5E42; }
+[data-theme="ocean"]       { --bg:#020E1A; --card:#031525; --card2:#041A2E; --sidebar:#010A14; --border:rgba(0,180,216,0.12); --text:#CAF0F8; --muted:#48A9C5; --dim:#1A5A6A; }
+[data-theme="purple-dark"] { --bg:#120B1E; --card:#1A1128; --card2:#201630; --sidebar:#0E0818; --border:rgba(139,92,246,0.12); --text:#EDE9FE; --muted:#8B7AB8; --dim:#4A3A6A; }
+[data-theme="charcoal"]    { --bg:#1A1A1A; --card:#242424; --card2:#2E2E2E; --sidebar:#111111; --border:rgba(255,255,255,0.07); --text:#EFEFEF; --muted:#888888; --dim:#555555; }
+[data-theme="midnight-red"]{ --bg:#150808; --card:#1E0E0E; --card2:#261212; --sidebar:#0F0505; --border:rgba(220,38,38,0.1);  --text:#FEE2E2; --muted:#A87070; --dim:#5A3030; }
+[data-theme="light"]       { --bg:#F0F4F8; --card:#FFFFFF; --card2:#F8FAFC; --sidebar:#1E3A5F; --border:rgba(0,0,0,0.08);     --text:#1E293B; --muted:#64748B; --dim:#94A3B8; }
+
+/* ===================== BASE ===================== */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.012'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:10px;}
+
+/* ===================== EDIT BAR ===================== */
+.edit-bar{position:fixed;top:0;left:230px;right:0;height:40px;background:linear-gradient(90deg,rgba(249,168,37,.14),rgba(249,168,37,.04));border-bottom:1px solid rgba(249,168,37,.22);display:flex;align-items:center;gap:12px;padding:0 24px;z-index:200;transform:translateY(-42px);transition:transform .3s;}
+.edit-bar.on{transform:translateY(0);}
+.edit-bar b{font-size:11px;color:var(--gold);letter-spacing:.8px;}
+.edit-bar span{font-size:11px;color:var(--muted);}
+.edit-bar span em{color:var(--gold-light);font-style:normal;}
+.edit-done{margin-left:auto;padding:5px 14px;border-radius:6px;background:var(--gold);color:#000;font-size:11px;font-weight:800;border:none;cursor:pointer;font-family:inherit;}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;background:var(--sidebar);border-right:1px solid var(--border);z-index:100;display:flex;flex-direction:column;transition:background .3s;}
+.sb-brand{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+.sb-badge{display:inline-block;background:var(--gold);color:#000;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:3px;margin-bottom:8px;text-transform:uppercase;}
+.sb-title{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:#fff;line-height:1.3;}
+.sb-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.sb-nav{padding:14px 10px;flex:1;overflow-y:auto;}
+.sb-label{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin:10px 0 5px;}
+.nav-a{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--muted);transition:all .2s;margin-bottom:2px;text-decoration:none;}
+.nav-a:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.nav-a.on{background:rgba(21,101,192,.22);color:var(--gold);font-weight:600;}
+.sb-actions{padding:0 10px 6px;}
+.ab{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;width:100%;border:none;margin-bottom:6px;text-align:left;}
+.ab-edit{background:rgba(249,168,37,.1);border:1px solid rgba(249,168,37,.25)!important;color:var(--gold-light);}
+.ab-edit.on{background:rgba(249,168,37,.22);border-color:var(--gold)!important;}
+.ab-theme{background:rgba(123,31,162,.12);border:1px solid rgba(123,31,162,.25)!important;color:#CE93D8;}
+.ab-import{background:rgba(21,101,192,.12);border:1px solid rgba(21,101,192,.25)!important;color:#90CAF9;}
+.ab-tpl{background:rgba(0,137,123,.1);border:1px solid rgba(0,137,123,.25)!important;color:#4DB6AC;font-size:11px;}
+.ab-pdf{background:rgba(229,57,53,.1);border:1px solid rgba(229,57,53,.25)!important;color:#EF9A9A;font-size:11px;}
+
+/* TOOLS TOGGLE */
+.sb-tools-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 10px 7px 13px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:inherit;color:var(--muted);font-size:11.5px;font-weight:600;margin-bottom:6px;transition:all .2s;}
+.sb-tools-toggle:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.tt-label{display:flex;align-items:center;gap:6px;}
+.tt-arrow{font-size:12px;transition:transform .25s;color:var(--dim);}
+.tt-arrow.up{transform:rotate(180deg);}
+.sb-tools-panel{overflow:hidden;max-height:0;transition:max-height .3s ease, opacity .25s ease;opacity:0;pointer-events:none;}
+.sb-tools-panel.open{max-height:500px;opacity:1;pointer-events:auto;}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--dim);}
+.sb-foot span{color:var(--gold);font-weight:600;}
+
+/* ===================== PETA SPASIAL ===================== */
+.peta-layer-btn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);transition:all .2s;}
+.peta-layer-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.peta-layer-btn.active{background:rgba(21,101,192,.3);border-color:rgba(21,101,192,.6);color:#90CAF9;}
+.zona-tag{padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;}
+/* Leaflet */
+#leafletMap{width:100%;height:560px;background:var(--bg);}
+.leaflet-container{font-family:'Plus Jakarta Sans',sans-serif;background:#0D1B2A;}
+.leaflet-tile-pane{filter:brightness(0.7) saturate(0.6) hue-rotate(180deg);}
+.leaflet-control-zoom a{background:rgba(11,30,61,.92)!important;color:#E8EDF2!important;border-color:rgba(255,255,255,.12)!important;font-size:16px!important;}
+.leaflet-control-zoom a:hover{background:rgba(21,101,192,.4)!important;}
+.leaflet-control-attribution{background:rgba(0,0,0,.5)!important;color:rgba(255,255,255,.3)!important;font-size:9px!important;}
+.leaflet-control-attribution a{color:rgba(255,255,255,.4)!important;}
+.peta-tooltip{background:rgba(11,30,61,.95)!important;border:1px solid rgba(249,168,37,.3)!important;border-radius:10px!important;padding:10px 13px!important;box-shadow:0 8px 24px rgba(0,0,0,.5)!important;}
+.peta-tooltip .leaflet-tooltip-tip{display:none!important;}
+.leaflet-peta-legend{background:rgba(11,30,61,.92);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;min-width:130px;}
+.leaflet-peta-legend h4{font-size:9.5px;font-weight:700;color:#7A8FA6;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;}
+.leaflet-peta-legend .leg-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.leaflet-peta-legend .leg-box{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.15);flex-shrink:0;}
+.leaflet-peta-legend .leg-lbl{font-size:9px;color:#7A8FA6;}
+
+/* ===================== MAIN ===================== */
+.main{margin-left:230px;padding:26px 26px 40px;position:relative;z-index:1;transition:padding-top .3s;}
+.main.eo{padding-top:62px;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.topbar h1{font-family:'Sora',sans-serif;font-size:21px;font-weight:700;color:#fff;}
+.topbar p{font-size:12px;color:var(--muted);margin-top:2px;}
+.yr-sel{display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.yr-btn{padding:7px 13px;font-size:12px;font-family:inherit;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;}
+.yr-btn.on{background:var(--blue);color:#fff;font-weight:600;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(46,125,50,.15);border:1px solid rgba(46,125,50,.3);padding:6px 12px;border-radius:8px;font-size:11px;color:#66BB6A;}
+.dot{width:7px;height:7px;background:#66BB6A;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:14px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 15px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .4s ease both;}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.3);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi.c-blue::before{background:var(--blue-mid);}
+.kpi.c-gold::before{background:var(--gold);}
+.kpi.c-red::before{background:var(--red);}
+.kpi.c-teal::before{background:var(--teal);}
+.kpi.c-purple::before{background:var(--purple);}
+.kpi-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.kpi-ico{font-size:18px;}
+.kpi-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.pill-up{background:rgba(46,125,50,.15);color:#66BB6A;}
+.pill-dn{background:rgba(229,57,53,.15);color:#EF9A9A;}
+.kpi-lbl{font-size:10px;color:var(--muted);}
+.kpi-val{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1;margin:3px 0 6px;}
+.kpi-val s{font-size:12px;color:var(--muted);font-weight:500;text-decoration:none;}
+.sparkline{width:100%!important;height:38px!important;max-height:38px;display:block;margin:2px 0;}
+.spark-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);}
+.kpi:nth-child(1){animation-delay:.05s} .kpi:nth-child(2){animation-delay:.1s} .kpi:nth-child(3){animation-delay:.15s} .kpi:nth-child(4){animation-delay:.2s} .kpi:nth-child(5){animation-delay:.25s}
+
+/* OVERVIEW TABLE */
+.ov-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:24px;animation:fadeUp .4s ease .3s both;}
+.ov-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.ov-table th{padding:9px 12px;font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);border-bottom:2px solid var(--border);text-align:center;}
+.ov-table th:first-child{text-align:left;}
+.ov-table th.th-now{color:var(--gold);border-bottom-color:var(--gold);}
+.ov-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);text-align:center;transition:background .15s;}
+.ov-table tr:last-child td{border-bottom:none;}
+.ov-table tr:hover td{background:rgba(255,255,255,.02);}
+.ov-table td:first-child{text-align:left;font-weight:600;}
+.ov-table td.td-now{color:var(--gold-light);font-weight:700;}
+.ov-pill{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.ov-good{background:rgba(46,125,50,.15);color:#66BB6A;}
+.ov-bad{background:rgba(229,57,53,.15);color:#EF9A9A;}
+
+/* SECTION DIVIDER */
+.sdiv{display:flex;align-items:center;gap:12px;margin:24px 0 16px;}
+.sdiv-line{flex:1;height:1px;background:var(--border);}
+.sdiv-lbl{font-size:10.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);white-space:nowrap;}
+
+/* CHART CARDS */
+.row{display:grid;gap:14px;margin-bottom:16px;}
+.r32{grid-template-columns:3fr 2fr;}
+.r23{grid-template-columns:2fr 3fr;}
+.r22{grid-template-columns:1fr 1fr;}
+.r33{grid-template-columns:1fr 1fr 1fr;}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s;}
+.glow{position:absolute;width:180px;height:180px;border-radius:50%;filter:blur(55px);opacity:.07;pointer-events:none;}
+.ct{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.ct-title{font-size:13px;font-weight:700;color:#fff;}
+.ct-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.b-blue{background:rgba(21,101,192,.2);color:#64B5F6;border:1px solid rgba(21,101,192,.3);}
+.b-gold{background:rgba(249,168,37,.15);color:var(--gold-light);border:1px solid rgba(249,168,37,.25);}
+.b-teal{background:rgba(0,137,123,.15);color:#4DB6AC;border:1px solid rgba(0,137,123,.25);}
+.b-red{background:rgba(229,57,53,.15);color:#EF9A9A;border:1px solid rgba(229,57,53,.25);}
+.b-purple{background:rgba(123,31,162,.15);color:#CE93D8;border:1px solid rgba(123,31,162,.25);}
+canvas{max-height:220px;}
+
+/* EDIT MODE */
+.cc.ea{border-color:rgba(249,168,37,.35);}
+.eo-btn{display:none;position:absolute;top:10px;right:10px;}
+.edit-mode .eo-btn{display:block;}
+.ec{background:rgba(249,168,37,.14);border:1px solid rgba(249,168,37,.3);color:var(--gold);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.ec:hover{background:rgba(249,168,37,.25);}
+
+/* OPD TABLE */
+.dt{width:100%;border-collapse:collapse;font-size:12px;}
+.dt th{text-align:left;padding:7px 10px;font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border);}
+.dt td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text);}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:rgba(255,255,255,.02);}
+.prog{height:5px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;margin-top:3px;}
+.prog-f{height:100%;border-radius:10px;}
+
+/* ===================== MODAL ===================== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;}
+.overlay.on{display:flex;}
+.modal{background:var(--card);border:1px solid rgba(249,168,37,.18);border-radius:18px;width:680px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:mIn .22s ease;}
+.modal.sm{width:560px;}
+@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.mh{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--card);}
+.mh-title{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:#fff;}
+.mx{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.mx:hover{background:rgba(255,255,255,.05);color:#fff;}
+.mb{padding:18px 22px;overflow-y:auto;flex:1;}
+.mf{padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;flex-shrink:0;}
+.btn{padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .2s;}
+.btn-p{background:var(--blue);color:#fff;}
+.btn-p:hover{background:#1976D2;}
+.btn-s{background:var(--card2);color:var(--muted);border:1px solid var(--border);}
+.btn-s:hover{color:var(--text);}
+
+/* DATA EDITOR */
+.de{background:var(--card2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.de-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--sidebar);border-bottom:1px solid var(--border);}
+.de-head span{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;}
+.add-btn{font-size:11px;color:var(--gold);background:rgba(249,168,37,.1);border:1px solid rgba(249,168,37,.25);border-radius:5px;padding:3px 10px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;}
+.add-btn:hover{background:rgba(249,168,37,.2);}
+.de table{width:100%;border-collapse:collapse;}
+.de th{padding:7px 10px;font-size:9.5px;font-weight:700;color:var(--dim);text-align:left;letter-spacing:.5px;text-transform:uppercase;}
+.de td{padding:4px 6px;border-top:1px solid rgba(255,255,255,.04);}
+.ei{width:100%;padding:6px 8px;background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:5px;color:var(--text);font-size:12px;font-family:inherit;transition:all .15s;}
+.ei:focus{outline:none;background:rgba(21,101,192,.1);border-color:rgba(21,101,192,.4);}
+.del{background:rgba(229,57,53,.1);border:1px solid rgba(229,57,53,.2);color:#EF9A9A;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:10px;transition:all .15s;}
+.del:hover{background:rgba(229,57,53,.25);}
+.hint{font-size:11px;color:var(--dim);margin-bottom:12px;}
+.hint strong{color:var(--muted);}
+.smsg{padding:8px 12px;border-radius:7px;font-size:11.5px;margin-bottom:11px;display:none;}
+.smsg.ok{background:rgba(46,125,50,.15);border:1px solid rgba(46,125,50,.3);color:#81C784;display:block;}
+.smsg.er{background:rgba(229,57,53,.15);border:1px solid rgba(229,57,53,.3);color:#EF9A9A;display:block;}
+.smsg.in{background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);color:#90CAF9;display:block;}
+
+/* IMPORT */
+.dz{border:2px dashed rgba(249,168,37,.3);border-radius:11px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(249,168,37,.03);margin-bottom:16px;position:relative;}
+.dz:hover,.dz.dg{border-color:var(--gold);background:rgba(249,168,37,.07);}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.sh-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.sh-tab{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.sh-tab:hover{color:var(--text);}
+.sh-tab.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.pv-wrap{background:var(--card2);border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:180px;margin-bottom:12px;}
+.pv-table{width:100%;border-collapse:collapse;font-size:11px;}
+.pv-table th{padding:6px 9px;background:var(--sidebar);color:var(--muted);font-weight:700;text-align:left;position:sticky;top:0;white-space:nowrap;border-bottom:1px solid var(--border);}
+.pv-table td{padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap;}
+
+/* THEME PICKER */
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+.tc{border-radius:11px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:all .2s;position:relative;}
+.tc:hover{transform:translateY(-2px);box-shadow:0 7px 22px rgba(0,0,0,.4);}
+.tc.on{border-color:var(--gold);}
+.tc-check{display:none;position:absolute;top:7px;right:7px;background:var(--gold);color:#000;font-weight:900;font-size:10px;width:19px;height:19px;border-radius:50%;align-items:center;justify-content:center;}
+.tc.on .tc-check{display:flex;}
+.tp{height:60px;display:flex;align-items:flex-end;padding:7px;gap:3px;}
+.tb{flex:1;border-radius:3px 3px 0 0;}
+.ti{padding:9px 11px;}
+.ti-name{font-size:11.5px;font-weight:700;margin-bottom:1px;}
+.ti-desc{font-size:9.5px;opacity:.5;}
+
+/* SUMBER DATA FOOTER */
+.sb-foot-edit{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.foot-edit-btn{background:rgba(249,168,37,.1);border:1px solid rgba(249,168,37,.2);color:var(--gold);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:inherit;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--sidebar);border:1px solid rgba(46,125,50,.4);border-radius:11px;padding:12px 18px;font-size:13px;color:#81C784;font-weight:600;z-index:9999;display:flex;align-items:center;gap:9px;box-shadow:0 7px 28px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);}
+.toast.on{transform:translateY(0);opacity:1;}
+
+.copy-btn:hover{background:rgba(139,92,246,.3);}
+
+/* PRINT / PDF STYLES */
+@media print {
+  body::before{display:none;}
+  .sidebar,.edit-bar,.toast{display:none!important;}
+  .main{margin-left:0!important;padding:10px 14px!important;}
+  .ab,.eo-btn,.yr-sel,.live-badge{display:none!important;}
+  .kpi-grid{grid-template-columns:repeat(5,1fr)!important;}
+  .cc,.kpi,.ov-card{break-inside:avoid;page-break-inside:avoid;}
+  .row{break-inside:avoid;}
+  canvas{max-height:180px!important;}
+  body{background:#fff!important;color:#111!important;}
+  .card,.cc,.kpi,.ov-card{background:#f8f8f8!important;border:1px solid #ddd!important;color:#111!important;}
+  .ct-title,.kpi-val,.kpi-lbl,.muted{color:#111!important;}
+  .print-header{display:block!important;}
+}
+.print-header{display:none;text-align:center;padding:10px 0 18px;border-bottom:2px solid #1565C0;margin-bottom:18px;}
+.print-header h2{font-size:18px;font-weight:800;color:#1565C0;}
+.print-header p{font-size:11px;color:#555;margin-top:3px;}
+
+/* RPJMD STATUS */
+.rpjmd-on{background:rgba(46,125,50,.15);color:#66BB6A;border:1px solid rgba(46,125,50,.3);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.rpjmd-warn{background:rgba(249,168,37,.15);color:#F9A825;border:1px solid rgba(249,168,37,.3);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.rpjmd-off{background:rgba(229,57,53,.15);color:#EF9A9A;border:1px solid rgba(229,57,53,.3);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.gap-pos{color:#66BB6A;font-weight:700;}
+.gap-neg{color:#EF9A9A;font-weight:700;}
+.gap-neu{color:var(--muted);font-weight:600;}
+</style>
+</head>
+<body>
+
+<!-- EDIT BAR -->
+<div class="edit-bar" id="editBar">
+  <b>✏️ MODE EDIT AKTIF</b>
+  <span>Klik <em>Edit Data</em> di setiap grafik untuk mengubah nilai & label</span>
+  <button class="edit-done" onclick="exitEdit()">✓ Selesai</button>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">Bappeda</div>
+    <div class="sb-title">Kabupaten Malang</div>
+    <div class="sb-sub">Bidang Ekonomi & SDA</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-label">Ringkasan</div>
+    <a class="nav-a on" href="#top"><span>📊</span> Overview Ekonomi</a>
+
+    <div class="sb-label">Indikator Makro</div>
+    <a class="nav-a" href="#pdrb"><span>📈</span> Pertumbuhan PDRB</a>
+    <a class="nav-a" href="#lapusaha"><span>🏭</span> Lapangan Usaha &amp; Pengeluaran</a>
+    <a class="nav-a" href="#inflasi"><span>💹</span> Inflasi</a>
+    <a class="nav-a" href="#kemiskinan"><span>👥</span> Kemiskinan &amp; TPT</a>
+    <a class="nav-a" href="#investasi"><span>💼</span> Investasi &amp; CSR</a>
+    <a class="nav-a" href="#pariwisata"><span>🏖️</span> Pariwisata &amp; UMKM</a>
+
+    <div class="sb-label">SDA &amp; Pangan</div>
+    <a class="nav-a" href="#sda"><span>🌾</span> Pertanian, Perikanan &amp; Peternakan</a>
+    <a class="nav-a" href="#ntp"><span>🌾</span> Produktivitas Padi</a>
+    <a class="nav-a" href="#ekspor"><span>📦</span> Ekspor-Impor Komoditas</a>
+
+    <div class="sb-label">Kinerja</div>
+    <a class="nav-a" href="#opd"><span>📋</span> Realisasi OPD</a>
+    <a class="nav-a" href="#rpjmd"><span>🎯</span> Monitoring RPJMD</a>
+
+    <div class="sb-label">Spasial</div>
+    <a class="nav-a" href="#peta-spasial" onclick="showPeta()"><span>🗺️</span> Peta Spasial</a>
+  </nav>
+  <div class="sb-actions">
+    <!-- Toggle header -->
+    <button class="sb-tools-toggle" id="toolsToggle" onclick="toggleTools()">
+      <span class="tt-label">⚙️ Alat &amp; Pengaturan</span>
+      <span class="tt-arrow" id="toolsArrow">▾</span>
+    </button>
+    <!-- Collapsible panel -->
+    <div class="sb-tools-panel" id="toolsPanel">
+      <button class="ab ab-edit" id="editBtn" onclick="toggleEdit()"><span>✏️</span> Mode Edit Data</button>
+      <button class="ab ab-theme" onclick="openTheme()"><span>🎨</span> Ganti Tema Warna</button>
+      <button class="ab ab-import" onclick="openM('import')"><span>📂</span> Import Excel</button>
+      <button class="ab ab-tpl" onclick="dlTemplate()"><span>⬇</span> Download Template</button>
+      <button class="ab ab-pdf" onclick="exportPDF()"><span>🖨️</span> Export Laporan PDF</button>
+      <button class="ab" style="background:rgba(46,125,50,.12);border:1px solid rgba(46,125,50,.3)!important;color:#81C784;font-weight:700" onclick="saveToFile()"><span>💾</span> Simpan ke File</button>
+      <button class="ab" style="background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.2)!important;color:#EF9A9A;font-size:11px" onclick="resetData()"><span>🔄</span> Reset ke Data Awal</button>
+    </div>
+  </div>
+  <div id="storageStatus" style="padding:6px 16px;font-size:9px;color:var(--dim);border-top:1px solid var(--border);display:none"><span style="color:#66BB6A">💾</span> <span id="storageTime">Data tersimpan</span></div>
+<div class="sb-foot">
+    <div class="sb-foot-edit">
+      <span style="font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim)">Info Data</span>
+      <button class="foot-edit-btn" onclick="openM('sumber')">✏️ Edit</button>
+    </div>
+    Data per <span id="fLabel">TW IV 2025*</span><br>
+    Sumber: <span id="fSumber" style="color:var(--muted)">BPS & OPD Kab. Malang</span><br>
+    Disusun: <span id="fPenyusun" style="color:var(--muted)">Bidang Ekonomi Bappeda</span><br>
+    <span id="fCatatan" style="color:var(--dim);font-size:9px">*) Proyeksi/Estimasi 2025</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main">
+  <!-- PRINT HEADER (only visible when printing) -->
+  <div class="print-header">
+    <h2>Dashboard Ekonomi Daerah — Kabupaten Malang</h2>
+    <p>Bidang Ekonomi & SDA — Bappeda Kabupaten Malang &nbsp;|&nbsp; <span id="printDate"></span></p>
+  </div>
+  <div id="top" class="topbar">
+    <div>
+      <h1>Dashboard Ekonomi Daerah</h1>
+      <p>Kabupaten Malang — Monitoring Indikator Makroekonomi & Sektoral &nbsp;|&nbsp; <span style="color:var(--gold);font-weight:600">Data PDRB: BPS Feb 2026</span> &nbsp;|&nbsp; <span style="color:var(--dim)">Data sektoral: estimasi OPD 2025</span></p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div class="yr-sel">
+        <button class="yr-btn" onclick="setYr(2022,this)">2022</button>
+        <button class="yr-btn" onclick="setYr(2023,this)">2023</button>
+        <button class="yr-btn" onclick="setYr(2024,this)">2024</button>
+        <button class="yr-btn on" onclick="setYr(2025,this)">2025</button>
+      </div>
+      <div class="live-badge"><div class="dot"></div>Data Terkini</div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi c-blue">
+      <div class="kpi-row"><span class="kpi-ico">📈</span><span class="kpi-pill pill-up" id="kp0">▲ 0,11%</span></div>
+      <div class="kpi-lbl">Pertumbuhan PDRB</div>
+      <div class="kpi-val" id="kv0">5,23<s>%</s></div>
+      <canvas class="sparkline" id="sp0"></canvas>
+      <div class="spark-lbl" id="sl0"></div>
+    </div>
+    <div class="kpi c-gold">
+      <div class="kpi-row"><span class="kpi-ico">💰</span><span class="kpi-pill pill-up" id="kp1">▼ 0,22%</span></div>
+      <div class="kpi-lbl">Inflasi (y-o-y)</div>
+      <div class="kpi-val" id="kv1">2,65<s>%</s></div>
+      <canvas class="sparkline" id="sp1"></canvas>
+      <div class="spark-lbl" id="sl1"></div>
+    </div>
+    <div class="kpi c-red">
+      <div class="kpi-row"><span class="kpi-ico">👥</span><span class="kpi-pill pill-up" id="kp2">▼ 0,28%</span></div>
+      <div class="kpi-lbl">Tingkat Kemiskinan</div>
+      <div class="kpi-val" id="kv2">9,54<s>%</s></div>
+      <canvas class="sparkline" id="sp2"></canvas>
+      <div class="spark-lbl" id="sl2"></div>
+    </div>
+    <div class="kpi c-teal">
+      <div class="kpi-row"><span class="kpi-ico">🏭</span><span class="kpi-pill pill-up" id="kp3">▲ 12,8%</span></div>
+      <div class="kpi-lbl">Realisasi Investasi</div>
+      <div class="kpi-val" id="kv3">5,3<s>T</s></div>
+      <canvas class="sparkline" id="sp3"></canvas>
+      <div class="spark-lbl" id="sl3"></div>
+    </div>
+    <div class="kpi c-purple">
+      <div class="kpi-row"><span class="kpi-ico">🎯</span><span class="kpi-pill pill-up" id="kp4">▼ 0,23%</span></div>
+      <div class="kpi-lbl">Tingkat Pengangguran</div>
+      <div class="kpi-val" id="kv4">4,12<s>%</s></div>
+      <canvas class="sparkline" id="sp4"></canvas>
+      <div class="spark-lbl" id="sl4"></div>
+    </div>
+    <div class="kpi c-green">
+      <div class="kpi-row"><span class="kpi-ico">👤</span><span class="kpi-pill pill-up">▲ 2,6%</span></div>
+      <div class="kpi-lbl">PDRB Per Kapita</div>
+      <div class="kpi-val">50,93<s>Jt</s></div>
+      <canvas class="sparkline" id="sp5"></canvas>
+      <div class="spark-lbl" id="sl5"></div>
+    </div>
+    <div class="kpi c-teal">
+      <div class="kpi-row"><span class="kpi-ico">🌿</span><span class="kpi-pill pill-up">▲ 2,3%</span></div>
+      <div class="kpi-lbl">Indeks Ekonomi Hijau</div>
+      <div class="kpi-val">47,13<s></s></div>
+      <canvas class="sparkline" id="sp6"></canvas>
+      <div class="spark-lbl" id="sl6"></div>
+    </div>
+    <div class="kpi c-blue">
+      <div class="kpi-row"><span class="kpi-ico">🔄</span><span class="kpi-pill pill-dn">▼ 0,62%</span></div>
+      <div class="kpi-lbl">Net Ekspor (% PDRB)</div>
+      <div class="kpi-val">-2,96<s>%</s></div>
+      <canvas class="sparkline" id="sp7"></canvas>
+      <div class="spark-lbl" id="sl7"></div>
+    </div>
+  </div>
+
+  <!-- BPS BANNER -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:14px">
+    <div style="background:linear-gradient(135deg,rgba(249,168,37,.12),rgba(249,168,37,.04));border:1px solid rgba(249,168,37,.25);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+      <div style="font-size:26px">📊</div>
+      <div>
+        <div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">PDRB Harga Berlaku 2025</div>
+        <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:800;color:#F9A825">Rp 150,23 Triliun</div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">↑ dari Rp 138,42 T pada 2024 — Sumber: BPS</div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(21,101,192,.12),rgba(21,101,192,.04));border:1px solid rgba(21,101,192,.25);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+      <div style="font-size:26px">💹</div>
+      <div>
+        <div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">PDRB Harga Konstan 2010</div>
+        <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:800;color:#64B5F6">Rp 84,20 Triliun</div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">↑ dari Rp 79,50 T pada 2024 — Sumber: BPS</div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(46,125,50,.12),rgba(46,125,50,.04));border:1px solid rgba(46,125,50,.25);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+      <div style="font-size:26px">🏆</div>
+      <div>
+        <div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Peringkat Pertumbuhan Jawa Timur</div>
+        <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:800;color:#66BB6A">#2 di Jawa Timur</div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">Tumbuh 5,92% — setara Kota Malang — BPS Feb 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW TABLE -->
+  <div class="ov-card">
+    <div class="ct" style="margin-bottom:12px">
+      <div><div class="ct-title">Ringkasan Indikator Makroekonomi</div><div class="ct-sub">Perbandingan 4 Tahun Terakhir</div></div>
+      <div class="badge b-blue">2022 – 2025</div>
+    </div>
+    <table class="ov-table"><thead><tr>
+      <th>Indikator</th><th>2022</th><th>2023</th><th>2024</th><th class="th-now">2025*</th><th>Tren</th>
+    </tr></thead><tbody id="ovTbody"></tbody></table>
+  </div>
+
+  <!-- PDRB -->
+  <div id="pdrb" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">📈 Pertumbuhan Ekonomi & PDRB</div><div class="sdiv-line"></div></div>
+  <div class="row r32">
+    <div class="cc" id="cc-pdrb"><div class="glow" style="background:#1976D2;top:-50px;left:-50px"></div>
+      <div class="eo-btn"><button class="ec" onclick="openE('pdrb')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Tren Pertumbuhan PDRB</div><div class="ct-sub">Atas Dasar Harga Konstan 2010 — Rp Miliar</div></div><div class="badge b-blue" id="bd-pdrb">Laju 5,92%</div></div>
+      <canvas id="cPdrb"></canvas></div>
+    <div class="cc" id="cc-struktur">
+      <div class="eo-btn"><button class="ec" onclick="openE('struktur')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Struktur PDRB per Lapangan Usaha</div><div class="ct-sub">Distribusi per Lapangan Usaha — ADHB</div></div><div class="badge b-gold">BPS 2025</div></div>
+      <canvas id="cStruktur"></canvas></div>
+  </div>
+
+  <!-- LAPANGAN USAHA & PENGELUARAN BPS 2025 -->
+  <div id="lapusaha" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🏭 Pertumbuhan per Lapangan Usaha — BPS 2025</div><div class="sdiv-line"></div></div>
+  <div class="row r32" style="margin-bottom:14px">
+    <div class="cc" id="cc-lapusaha">
+      <div class="eo-btn"><button class="ec" onclick="openE('lapusaha')">✏️ Edit Data</button></div>
+      <div class="ct">
+        <div><div class="ct-title">Pertumbuhan PDRB per Lapangan Usaha</div><div class="ct-sub">Persen — Perbandingan 2023, 2024, 2025</div></div>
+        <div class="badge b-gold">BPS Feb 2026</div>
+      </div>
+      <canvas id="cLapusaha" style="max-height:280px"></canvas>
+    </div>
+    <div class="cc" id="cc-pengeluaran">
+      <div class="eo-btn"><button class="ec" onclick="openE('pengeluaran')">✏️ Edit Data</button></div>
+      <div class="ct">
+        <div><div class="ct-title">PDRB Menurut Pengeluaran</div><div class="ct-sub">Distribusi & Laju Pertumbuhan — BPS 2025</div></div>
+        <div class="badge b-blue">BPS Feb 2026</div>
+      </div>
+      <!-- Distribusi -->
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Distribusi (% thd PDRB)</div>
+      <canvas id="cPengeluaranDist" style="max-height:110px;margin-bottom:14px"></canvas>
+      <!-- Pertumbuhan -->
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;margin-top:4px">Laju Pertumbuhan (%)</div>
+      <canvas id="cPengeluaranGrowth" style="max-height:110px"></canvas>
+    </div>
+  </div>
+
+  <!-- STRUKTUR PDRB 17 SEKTOR -->
+  <div class="row r32" style="margin-bottom:14px">
+    <div class="cc" id="cc-struktur17">
+      <div class="eo-btn"><button class="ec" onclick="openE('struktur17')">✏️ Edit Data</button></div>
+      <div class="ct">
+        <div><div class="ct-title">Struktur PDRB — Distribusi 17 Lapangan Usaha</div><div class="ct-sub">Persentase terhadap total PDRB 2025</div></div>
+        <div class="badge b-gold">BPS Feb 2026</div>
+      </div>
+      <canvas id="cStruktur17" style="max-height:300px"></canvas>
+    </div>
+    <div class="cc" id="cc-struktur17bar">
+      <div class="ct">
+        <div><div class="ct-title">Perbandingan Distribusi 2024 vs 2025</div><div class="ct-sub">Perubahan pangsa per lapangan usaha (%)</div></div>
+        <div class="badge b-teal">Δ 2024→2025</div>
+      </div>
+      <canvas id="cStruktur17bar" style="max-height:300px"></canvas>
+    </div>
+  </div>
+
+
+
+  <!-- INFLASI -->
+  <div id="inflasi" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">💹 Inflasi</div><div class="sdiv-line"></div></div>
+  <div class="row r23">
+    <div class="cc" id="cc-inflasi">
+      <div class="eo-btn"><button class="ec" onclick="openE('inflasi')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Inflasi Bulanan</div><div class="ct-sub">m-to-m (%) <span style="color:var(--dim);font-size:9px">— Sumber: estimasi BPS Kab. Malang 2025</span></div></div><div class="badge b-gold" id="bd-inflasi">y-o-y 2,65%</div></div>
+      <canvas id="cInflasi"></canvas></div>
+    <div class="cc" id="cc-infk"><div class="glow" style="background:#F9A825;top:-30px;right:-30px"></div>
+      <div class="eo-btn"><button class="ec" onclick="openE('infk')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Inflasi per Kelompok</div><div class="ct-sub">Tahun 2025 (%)</div></div><div class="badge b-gold">7 Kelompok</div></div>
+      <canvas id="cInfk"></canvas></div>
+  </div>
+
+  <!-- KEMISKINAN -->
+  <div id="kemiskinan" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">👥 Kemiskinan & Ketenagakerjaan</div><div class="sdiv-line"></div></div>
+  <div class="row r22">
+    <div class="cc" id="cc-miskin">
+      <div class="eo-btn"><button class="ec" onclick="openE('miskin')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Tren Kemiskinan</div><div class="ct-sub">% Penduduk Miskin <span style="color:var(--dim);font-size:9px">— Sumber: estimasi BPS/Susenas 2025</span></div></div><div class="badge b-red" id="bd-miskin">9,54%</div></div>
+      <canvas id="cMiskin"></canvas></div>
+    <div class="cc" id="cc-tpt">
+      <div class="eo-btn"><button class="ec" onclick="openE('tpt')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Ketenagakerjaan</div><div class="ct-sub">TPT & Angkatan Kerja</div></div><div class="badge b-red" id="bd-tpt">TPT 4,12%</div></div>
+      <canvas id="cTpt"></canvas></div>
+  </div>
+
+  <!-- INVESTASI -->
+  <div id="investasi" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">💼 Investasi & CSR</div><div class="sdiv-line"></div></div>
+  <div class="row r32">
+    <div class="cc" id="cc-inv"><div class="glow" style="background:#00897B;bottom:-30px;left:40px"></div>
+      <div class="eo-btn"><button class="ec" onclick="openE('inv')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Realisasi Investasi PMA & PMDN</div><div class="ct-sub">Rp Miliar <span style="color:var(--dim);font-size:9px">— Sumber: estimasi DPMPTSP 2025</span></div></div><div class="badge b-teal" id="bd-inv">Total Rp 5,3T</div></div>
+      <canvas id="cInv"></canvas></div>
+    <div class="cc" id="cc-csr">
+      <div class="eo-btn"><button class="ec" onclick="openE('csr')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Realisasi CSR per Sektor</div><div class="ct-sub">Rp Miliar</div></div><div class="badge b-teal">CSR 2025</div></div>
+      <canvas id="cCsr"></canvas></div>
+  </div>
+
+  <!-- PARIWISATA -->
+  <div id="pariwisata" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🏖️ Pariwisata & UMKM</div><div class="sdiv-line"></div></div>
+  <div class="row r33">
+    <div class="cc" id="cc-wisata">
+      <div class="eo-btn"><button class="ec" onclick="openE('wisata')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Kunjungan Wisatawan</div><div class="ct-sub">Ribuan orang <span style="color:var(--dim);font-size:9px">— Sumber: estimasi Dinas Pariwisata 2025</span></div></div><div class="badge b-purple">+13,7%</div></div>
+      <canvas id="cWisata"></canvas></div>
+    <div class="cc" id="cc-dest">
+      <div class="eo-btn"><button class="ec" onclick="openE('dest')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Top Destinasi Wisata</div><div class="ct-sub">Kunjungan (Ribuan)</div></div><div class="badge b-purple">Kab. Malang</div></div>
+      <canvas id="cDest"></canvas></div>
+    <div class="cc" id="cc-umkm">
+      <div class="eo-btn"><button class="ec" onclick="openE('umkm')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Perkembangan UMKM</div><div class="ct-sub">Jumlah Unit Usaha</div></div><div class="badge b-purple" id="bd-umkm">396.450 Unit</div></div>
+      <canvas id="cUmkm"></canvas></div>
+  </div>
+
+  <!-- OPD TABLE -->
+  <div id="opd" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">📋 Realisasi Kinerja OPD Binaan</div><div class="sdiv-line"></div></div>
+  <div class="cc" id="cc-opd" style="margin-bottom:40px">
+    <div class="eo-btn"><button class="ec" onclick="openE('opd')">✏️ Edit Data</button></div>
+    <div class="ct" style="margin-bottom:12px">
+      <div><div class="ct-title">Capaian Kinerja 11 OPD Binaan — 2025</div><div class="ct-sub">Persentase capaian indikator kinerja utama</div></div>
+      <div class="badge b-blue">Per Des 2025</div>
+    </div>
+    <table class="dt"><thead><tr><th>OPD</th><th>Indikator</th><th>Target</th><th>Realisasi</th><th>Capaian</th><th style="width:120px">Progress</th></tr></thead>
+    <tbody id="opdTb"></tbody></table>
+  </div>
+
+  <!-- SDA SECTION -->
+  <div id="sda" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🌾 Sektor Sumber Daya Alam</div><div class="sdiv-line"></div></div>
+  <div class="row r33">
+    <div class="cc" id="cc-padi">
+      <div class="eo-btn"><button class="ec" onclick="openE('padi')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Produksi Padi</div><div class="ct-sub">Ribu Ton GKG</div></div><div class="badge b-teal" id="bd-padi">589 Rb Ton</div></div>
+      <canvas id="cPadi"></canvas>
+    </div>
+    <div class="cc" id="cc-ikan">
+      <div class="eo-btn"><button class="ec" onclick="openE('ikan')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Produksi Perikanan</div><div class="ct-sub">Ton — Tangkap & Budidaya</div></div><div class="badge b-teal" id="bd-ikan">46.380 Ton</div></div>
+      <canvas id="cIkan"></canvas>
+    </div>
+    <div class="cc" id="cc-ternak">
+      <div class="eo-btn"><button class="ec" onclick="openE('ternak')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Produksi Peternakan</div><div class="ct-sub">Ton Daging</div></div><div class="badge b-teal" id="bd-ternak">55.620 Ton</div></div>
+      <canvas id="cTernak"></canvas>
+    </div>
+  </div>
+
+  <!-- NTP SECTION -->
+  <div id="ntp" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🌾 Produktivitas Padi &amp; Ketahanan Pangan</div><div class="sdiv-line"></div></div>
+  <div class="row r32">
+    <div class="cc" id="cc-prodpadi">
+      <div class="eo-btn"><button class="ec" onclick="openE('prodpadi')">✏️ Edit Data</button></div>
+      <div class="ct">
+        <div><div class="ct-title">Produktivitas Padi per Tahun</div><div class="ct-sub">Kuintal per Hektar (Ku/Ha) — Padi Sawah &amp; Padi Gogo</div></div>
+        <div class="badge b-teal" id="bd-prodpadi">61,4 Ku/Ha</div>
+      </div>
+      <canvas id="cProdpadi"></canvas>
+    </div>
+    <div class="cc" id="cc-luaspanen">
+      <div class="eo-btn"><button class="ec" onclick="openE('prodpadi')">✏️ Edit Data</button></div>
+      <div class="ct">
+        <div><div class="ct-title">Luas Panen Padi</div><div class="ct-sub">Ribu Hektar per Tahun</div></div>
+        <div class="badge b-teal" id="bd-luaspanen">96,2 Rb Ha</div>
+      </div>
+      <canvas id="cLuaspanen"></canvas>
+    </div>
+  </div>
+  <div class="row r32" style="margin-top:14px">
+    <div class="cc" id="cc-pph">
+      <div class="eo-btn"><button class="ec" onclick="openE('pph')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Skor PPH &amp; Ketersediaan Pangan</div><div class="ct-sub">Pola Pangan Harapan per Komoditas</div></div><div class="badge b-teal">PPH 86,1</div></div>
+      <canvas id="cPph"></canvas>
+    </div>
+  </div>
+  <!-- EKSPOR-IMPOR -->
+  <div id="ekspor" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">📦 Ekspor-Impor Komoditas</div><div class="sdiv-line"></div></div>
+  <div class="row r32">
+    <div class="cc" id="cc-ekspor">
+      <div class="eo-btn"><button class="ec" onclick="openE('ekspor')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Tren Ekspor-Impor</div><div class="ct-sub">USD Juta <span style="color:var(--dim);font-size:9px">— Sumber: estimasi Dinas Perindag 2025</span></div></div><div class="badge b-blue" id="bd-ekspor">Ekspor $185 Juta</div></div>
+      <canvas id="cEkspor"></canvas>
+    </div>
+    <div class="cc" id="cc-komoditas">
+      <div class="eo-btn"><button class="ec" onclick="openE('komoditas')">✏️ Edit Data</button></div>
+      <div class="ct"><div><div class="ct-title">Ekspor per Komoditas</div><div class="ct-sub">USD Juta — 2025</div></div><div class="badge b-blue">5 Komoditas Unggulan</div></div>
+      <canvas id="cKomoditas"></canvas>
+    </div>
+  </div>
+
+  <!-- RPJMD MONITORING -->
+  <div id="rpjmd" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🎯 Monitoring Target RPJMD</div><div class="sdiv-line"></div></div>
+  <div class="cc" id="cc-rpjmd" style="margin-bottom:14px">
+    <div class="eo-btn"><button class="ec" onclick="openE('rpjmd')">✏️ Edit Data</button></div>
+    <div class="ct" style="margin-bottom:16px">
+      <div><div class="ct-title">Status Capaian Indikator RPJMD — Bidang Ekonomi & SDA</div><div class="ct-sub">Baseline 2024 → Target Akhir 2029 vs Capaian 2025 — Sumber: Perda No.5/2025</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge" style="background:rgba(46,125,50,.18);color:#66BB6A;border:1px solid rgba(46,125,50,.3)">✅ On Track</span>
+        <span class="badge" style="background:rgba(249,168,37,.15);color:#F9A825;border:1px solid rgba(249,168,37,.3)">⚠️ Perlu Perhatian</span>
+        <span class="badge" style="background:rgba(229,57,53,.15);color:#EF9A9A;border:1px solid rgba(229,57,53,.3)">🔴 Off Track</span>
+      </div>
+    </div>
+    <table class="dt" id="rpjmdTable">
+      <thead><tr>
+        <th>Indikator RPJMD</th>
+        <th>Baseline 2020</th>
+        <th>Target Akhir RPJMD</th>
+        <th>Capaian 2025</th>
+        <th>Gap</th>
+        <th>Status</th>
+        <th style="width:130px">Progress vs Target</th>
+      </tr></thead>
+      <tbody id="rpjmdTb"></tbody>
+    </table>
+  </div>
+  <div class="row r22" style="margin-bottom:40px">
+    <div class="cc" id="cc-rpjmd-radar">
+      <div class="ct"><div><div class="ct-title">Radar Capaian RPJMD</div><div class="ct-sub">% Capaian terhadap target akhir</div></div><div class="badge b-blue">6 Indikator Utama</div></div>
+      <canvas id="cRpjmdRadar"></canvas>
+    </div>
+    <div class="cc" id="cc-rpjmd-bar">
+      <div class="ct"><div><div class="ct-title">Proyeksi vs Target Akhir RPJMD</div><div class="ct-sub">Persentase capaian</div></div><div class="badge b-blue">2025</div></div>
+      <canvas id="cRpjmdBar" style="min-height:340px"></canvas>
+    </div>
+  </div>
+
+<!-- PETA SPASIAL -->
+<div id="peta-spasial" class="sdiv"><div class="sdiv-line"></div><div class="sdiv-lbl">🗺️ Peta Spasial Ekonomi Kabupaten Malang</div><div class="sdiv-line"></div></div>
+
+<div class="cc" style="margin-bottom:14px;padding:0;overflow:hidden">
+  <!-- PETA HEADER -->
+  <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="ct-title">Peta Spasial Ekonomi per Kecamatan</div>
+      <div class="ct-sub">Visualisasi distribusi indikator ekonomi berbasis wilayah — 33 Kecamatan Kabupaten Malang</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div class="badge b-blue" id="peta-layer-badge">Layer: Jumlah UMKM</div>
+      <div class="badge" style="background:rgba(46,125,50,.15);color:#66BB6A;border:1px solid rgba(46,125,50,.25)">🟢 Interaktif</div>
+    </div>
+  </div>
+
+  <!-- LAYER CONTROLS -->
+  <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Layer Aktif:</span>
+    <button class="peta-layer-btn active" onclick="setLayer('umkm',this)" data-layer="umkm">🏪 UMKM</button>
+    <button class="peta-layer-btn" onclick="setLayer('kemiskinan',this)" data-layer="kemiskinan">👥 Kemiskinan</button>
+    <button class="peta-layer-btn" onclick="setLayer('padi',this)" data-layer="padi">🌾 Produksi Padi</button>
+    <button class="peta-layer-btn" onclick="setLayer('perikanan',this)" data-layer="perikanan">🐟 Perikanan</button>
+    <button class="peta-layer-btn" onclick="setLayer('peternakan',this)" data-layer="peternakan">🐄 Peternakan</button>
+    <button class="peta-layer-btn" onclick="setLayer('investasi',this)" data-layer="investasi">💼 Investasi</button>
+    <button class="peta-layer-btn" onclick="setLayer('pariwisata',this)" data-layer="pariwisata">🏖️ Pariwisata</button>
+    <button class="peta-layer-btn" onclick="setLayer('tpt',this)" data-layer="tpt">🎯 Pengangguran</button>
+    <button class="peta-layer-btn" onclick="setLayer('pbb',this)" data-layer="pbb">🏛️ PBB-P2</button>
+    <button class="peta-layer-btn" onclick="openPetaEdit()" style="margin-left:auto;background:rgba(249,168,37,.12);border-color:rgba(249,168,37,.35);color:#F9A825">✏️ Edit Data Layer</button>
+  </div>
+
+  <!-- PETA + PANEL -->
+  <div style="display:grid;grid-template-columns:1fr 300px;min-height:560px">
+    <!-- LEAFLET MAP -->
+    <div style="position:relative;border-right:1px solid var(--border);overflow:hidden" id="petaMapWrap">
+      <div id="leafletMap"></div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div style="padding:16px;overflow-y:auto;max-height:560px">
+      <div style="font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">📊 Ranking Kecamatan</div>
+      <div id="petaRanking" style="display:flex;flex-direction:column;gap:5px"></div>
+    </div>
+  </div>
+
+  <!-- PETA FOOTER STATS -->
+  <div style="padding:14px 20px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+    <div style="text-align:center">
+      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Kecamatan Tertinggi</div>
+      <div id="petaStatMax" style="font-size:13px;font-weight:700;color:#66BB6A"></div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Kecamatan Terendah</div>
+      <div id="petaStatMin" style="font-size:13px;font-weight:700;color:#EF9A9A"></div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Rata-rata Kabupaten</div>
+      <div id="petaStatAvg" style="font-size:13px;font-weight:700;color:#64B5F6"></div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Total Kecamatan</div>
+      <div style="font-size:13px;font-weight:700;color:var(--gold)">33 Kecamatan</div>
+    </div>
+  </div>
+</div>
+
+<!-- PETA GRID INFO -->
+<div class="row r33" style="margin-bottom:40px">
+  <div class="cc">
+    <div class="ct"><div><div class="ct-title">🔴 Zona Prioritas Intervensi</div><div class="ct-sub">Kecamatan dengan indikator di bawah rata-rata kabupaten</div></div></div>
+    <div id="petaZonaMerah" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+  </div>
+  <div class="cc">
+    <div class="ct"><div><div class="ct-title">🟡 Zona Berkembang</div><div class="ct-sub">Kecamatan dengan indikator mendekati rata-rata</div></div></div>
+    <div id="petaZonaKuning" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+  </div>
+  <div class="cc">
+    <div class="ct"><div><div class="ct-title">🟢 Zona Maju</div><div class="ct-sub">Kecamatan dengan indikator di atas rata-rata kabupaten</div></div></div>
+    <div id="petaZonaHijau" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+  </div>
+</div>
+
+
+<!-- TOAST -->
+<div class="toast" id="toast">✅ Berhasil!</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal" onclick="if(event.target===this)closeM()">
+  <div class="modal" id="modalBox">
+    <div class="mh"><div class="mh-title" id="mTitle">Edit</div><button class="mx" onclick="closeM()">✕</button></div>
+    <div class="mb" id="mBody"></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeM()">Batal</button><button class="btn btn-p" id="mApply" onclick="doApply()">✅ Terapkan</button></div>
+  </div>
+</div>
+
+<!-- THEME MODAL -->
+<div class="overlay" id="themeModal" onclick="if(event.target===this)closeTheme()">
+  <div class="modal sm">
+    <div class="mh"><div class="mh-title">🎨 Pilih Tema Warna</div><button class="mx" onclick="closeTheme()">✕</button></div>
+    <div class="mb"><div class="hint" style="margin-bottom:16px">Klik tema untuk langsung melihat perubahan.</div><div class="tg" id="themeGrid"></div></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeTheme()">Tutup</button></div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// MASTER DATA
+// ================================================================
+// *** DATA TERSIMPAN — di-generate otomatis, jangan edit manual ***
+D = {
+  pdrb:    { labels:['2019','2020','2021','2022','2023','2024','2025'], values:[68045,71779,69866,72047,75742,79501,84204], growth:[5.49,-2.68,3.12,5.13,5.00,4.96,5.92] },
+  struktur:{ labels:['Industri Pengolahan','Perdagangan Besar','Pertanian/Kehutanan/Perikanan','Konstruksi','Informasi & Komunikasi','Lainnya'], values:[33.67,18.76,13.81,12.46,4.34,16.96] },
+  inflasi: { labels:['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'], values:[0.38,0.27,0.48,0.19,0.21,0.40,0.25,0.18,0.32,0.14,0.22,0.55] },
+  infk:    { labels:['Makanan','Perumahan','Sandang','Kesehatan','Pendidikan','Transportasi','Komunikasi'], values:[3.85,2.41,1.72,3.05,3.20,2.74,0.76] },
+  miskin:  { labels:['2018','2019','2020','2021','2022','2023','2024','2025*'], values:[11.24,10.80,11.45,11.02,10.52,10.10,9.82,9.54] },
+  tpt:     { labels:['2020','2021','2022','2023','2024','2025*'], tpt:[6.21,5.84,5.32,4.53,4.35,4.12], ak:[1310,1325,1342,1358,1371,1385] },
+  inv:     { labels:['2020','2021','2022','2023','2024','2025*'], pma:[890,1120,1450,1680,1920,2180], pmdn:[1240,1380,1650,2020,2780,3120] },
+  csr:     { labels:['Pendidikan','Kesehatan','Lingkungan','Infrastruktur','UMKM','Sosial'], values:[24.1,20.3,13.5,16.2,12.8,9.1] },
+  wisata:  { labels:['2020','2021','2022','2023','2024','2025*'], values:[1240,980,2340,3820,4520,5140] },
+  dest:    { labels:['Pantai Balekambang','Bromo (Transit)','Coban Rondo','Sendang Biru','Sumber Pitu'], values:[780,610,510,445,368] },
+  umkm:    { labels:['2020','2021','2022','2023','2024','2025*'], values:[342180,351240,361890,373120,384291,396450] },
+
+  // === NEW MODULES ===
+  padi:    { labels:['2020','2021','2022','2023','2024','2025*'], values:[528,540,555,565,574,589] },
+  ikan:    { labels:['2020','2021','2022','2023','2024','2025*'], tangkap:[18200,18800,19400,20100,20900,21600], budidaya:[19800,21500,23800,26000,28400,31200] },
+  ternak:  { labels:['2020','2021','2022','2023','2024','2025*'], daging:[48200,49800,51300,53100,54800,55620], susu:[220400,228000,235000,242000,249000,255800] },
+  prodpadi:{ labels:['2019','2020','2021','2022','2023','2024','2025'], sawah:[57.2,56.8,58.1,58.6,59.3,60.1,61.4], gogo:[42.1,41.8,43.2,43.5,44.1,44.8,45.6], luas:[92.4,91.8,93.2,93.8,94.5,95.1,96.2] },
+  pph:     { labels:['Padi','Umbi','Pangan Hewani','Minyak','Buah/Biji','Kacang','Gula','Sayur/Buah','Lainnya'], values:[24.3,2.1,18.6,5.0,2.4,8.2,4.0,18.8,2.7], target:[25,2.5,24,5,1,10,2.5,30,0] },
+
+  ekspor:  { labels:['2020','2021','2022','2023','2024','2025*'], ekspor:[128,145,162,172,179,185], impor:[95,108,122,131,138,144] },
+  komoditas:{ labels:['Hasil Laut','Pertanian Olahan','Hortikultura','Produk Kayu','Peternakan'], values:[48.2,42.1,35.6,28.4,30.7] },
+
+  // === DATA BPS 2025 ===
+  struktur17: {
+    labels:[
+      'Industri Pengolahan','Perdagangan Besar & Eceran',
+      'Pertanian, Kehutanan & Perikanan','Konstruksi',
+      'Informasi & Komunikasi','Jasa Pendidikan',
+      'Jasa Lainnya','Peny. Akomodasi & Makan Minum',
+      'Administrasi Pemerintahan','Real Estat',
+      'Jasa Keuangan & Asuransi','Transportasi & Pergudangan',
+      'Pertambangan & Penggalian','Jasa Kesehatan',
+      'Jasa Perusahaan','Pengadaan Air',
+      'Pengadaan Listrik & Gas'
+    ],
+    dist2024:[32.71,19.22,14.18,12.60,4.39,2.26,1.93,3.76,1.68,1.38,1.65,1.57,1.54,0.60,0.37,0.09,0.07],
+    dist2025:[33.67,18.76,13.81,12.46,4.34,2.24,2.06,3.86,1.64,1.37,1.57,1.58,1.50,0.60,0.38,0.09,0.07],
+    growth2025:[8.20,4.05,3.00,5.45,6.81,6.66,7.87,8.99,2.07,4.55,2.22,8.69,3.28,6.49,9.04,4.44,4.28]
+  },
+  lapusaha: {
+    labels:['Industri Pengolahan','Transportasi & Pergudangan','Peny. Akomodasi & Makan','Jasa Perusahaan','Jasa Lainnya','Informasi & Komunikasi','Jasa Kesehatan','Jasa Pendidikan','Konstruksi','Perdagangan Besar','Pertanian/Kehutanan/Perikanan'],
+    data2023:[3.96,8.69,6.37,9.15,9.55,7.27,6.83,5.67,6.25,4.85,0.90],
+    data2024:[4.66,10.06,5.69,5.31,9.55,6.81,6.49,5.88,6.59,4.85,0.90],
+    data2025:[8.20,8.69,8.99,9.04,7.87,6.81,6.49,6.66,5.45,4.05,3.00]
+  },
+  pengeluaran: {
+    labels:['Konsumsi RT','PMTB','Konsumsi Pemerintah','Konsumsi LNPRT'],
+    distribusi2024:[65.67,31.83,3.27,2.73],
+    distribusi2025:[65.05,31.69,3.19,2.67],
+    pertumbuhan2024:[5.05,5.56,7.04,12.65],
+    pertumbuhan2025:[4.60,6.25,1.95,4.30]
+  },
+};
+
+OPD = [
+  {name:'Badan Pendapatan Daerah',ind:'PAD (Rp Miliar)',target:'1.380',real:'1.462',pct:105.9,color:'#1976D2'},
+  {name:'BKAD',ind:'Opini BPK',target:'WTP',real:'WTP',pct:100,color:'#0097A7'},
+  {name:'Dinas Tenaga Kerja',ind:'TPT (%)',target:'4,2',real:'4,12',pct:101.9,color:'#2E7D32'},
+  {name:'Dinas Perindag',ind:'Nilai Ekspor (USD Juta)',target:'190',real:'185',pct:97.4,color:'#7B1FA2'},
+  {name:'Dinas Pariwisata',ind:'Kunjungan (Ribu)',target:'4.800',real:'5.140',pct:107.1,color:'#E65100'},
+  {name:'Dinas Koperasi & UM',ind:'UMKM Naik Kelas',target:'920',real:'876',pct:95.2,color:'#C62828'},
+  {name:'DPMPTSP',ind:'Realisasi Investasi (T)',target:'4,8',real:'5,3',pct:110.4,color:'#00695C'},
+  {name:'Ketahanan Pangan',ind:'Skor PPH',target:'87,0',real:'86,1',pct:98.9,color:'#F9A825'},
+  {name:'Dinas Nakeswan',ind:'Prod. Daging (Ton)',target:'54.000',real:'55.620',pct:103.0,color:'#558B2F'},
+  {name:'Dinas Pertanian',ind:'Prod. Padi (Ton)',target:'590.000',real:'588.200',pct:99.7,color:'#1565C0'},
+  {name:'Dinas Perikanan',ind:'Prod. Ikan (Ton)',target:'44.000',real:'46.380',pct:105.4,color:'#0277BD'},
+];
+
+// RPJMD DATA
+RPJMD = [
+  {ind:'Pertumbuhan Ekonomi (%)',         ico:'📈', baseline:4.96, target:5.32, capaian:5.92, satuan:'%',  good:'up'},
+  {ind:'Tingkat Kemiskinan (%)',           ico:'👥', baseline:8.98, target:4.84, capaian:9.54, satuan:'%',  good:'dn'},
+  {ind:'Pengangguran / TPT (%)',           ico:'👷', baseline:5.13, target:3.99, capaian:4.12, satuan:'%',  good:'dn'},
+  {ind:'Indeks Pembangunan Manusia',       ico:'🎓', baseline:73.53,target:77.07,capaian:74.03,satuan:'',   good:'up'},
+  {ind:'Realisasi Investasi (T Rp)',       ico:'🏭', baseline:4.52, target:4.87, capaian:5.30, satuan:'T',  good:'up'},
+  {ind:'Rasio PDRB K-UMKM (%)',           ico:'🤝', baseline:76.74,target:78.40,capaian:77.21,satuan:'%',  good:'up'},
+  {ind:'Kontribusi PDRB Industri (%)',     ico:'🏗️', baseline:32.71,target:31.78,capaian:31.11,satuan:'%',  good:'dn'},
+  {ind:'Rasio PDRB Pariwisata (%)',        ico:'🏖️', baseline:3.76, target:4.41, capaian:3.76, satuan:'%',  good:'up'},
+  {ind:'Deflator PDRB / Inflasi IHI (%)', ico:'💹', baseline:2.73, target:3.29, capaian:2.65, satuan:'%',  good:'up'},
+  {ind:'Rasio PAD thd Pendapatan (%)',     ico:'💰', baseline:19.97,target:20.29,capaian:20.25,satuan:'%',  good:'up'},
+];
+// *** END DATA TERSIMPAN ***
+
+// ================================================================
+// STORAGE — simpan & muat data dari localStorage
+// ================================================================
+const STORAGE_KEY = 'bappeda_dashboard_data_v18';
+
+function saveData() {
+  try {
+    const now = new Date();
+    const payload = { D, OPD, RPJMD, savedAt: now.toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    // Update UI indicator
+    const st = document.getElementById('storageStatus');
+    const tm = document.getElementById('storageTime');
+    if(st && tm) {
+      st.style.display = 'block';
+      tm.textContent = 'Tersimpan ' + now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    }
+  } catch(e) { console.warn('Gagal menyimpan data:', e); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    if (payload.D)     { Object.keys(payload.D).forEach(k => { if(D[k]) Object.assign(D[k], payload.D[k]); }); }
+    if (payload.OPD)   { OPD = payload.OPD; }
+    if (payload.RPJMD) { RPJMD = payload.RPJMD; }
+    return payload.savedAt;
+  } catch(e) { console.warn('Gagal memuat data:', e); return false; }
+}
+
+function saveToFile() {
+  try {
+    // Ambil HTML saat ini
+    let html = document.documentElement.outerHTML;
+
+    // Serialisasi data terkini ke JSON
+    const dataBlock = `
+// *** DATA TERSIMPAN — di-generate otomatis, jangan edit manual ***
+D = ${JSON.stringify(D, null, 2)};
+OPD = ${JSON.stringify(OPD, null, 2)};
+RPJMD = ${JSON.stringify(RPJMD, null, 2)};
+// *** END DATA TERSIMPAN ***`;
+
+    // Ganti blok MASTER DATA di dalam HTML dengan data terkini
+    // Cari dari marker "let D = {" sampai setelah RPJMD array
+    const markerStart = /\/\/ \*\*\* DATA TERSIMPAN[\s\S]*?\*\*\* END DATA TERSIMPAN \*\*\*/;
+    const markerFallback = /let D = \{[\s\S]*?\};[\s\S]*?let OPD = \[[\s\S]*?\];[\s\S]*?let RPJMD = \[[\s\S]*?\];/;
+
+    if (markerStart.test(html)) {
+      html = html.replace(markerStart, dataBlock.trim());
+    } else if (markerFallback.test(html)) {
+      html = html.replace(markerFallback, dataBlock.trim());
+    } else {
+      toast('⚠️ Gagal menyimpan — struktur tidak dikenali');
+      return;
+    }
+
+    // Download file
+    const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const tgl = new Date().toISOString().slice(0,10);
+    a.download = 'dashboard_ekonomi_bappeda_' + tgl + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('💾 File berhasil disimpan! Buka file baru untuk melihat data terkini.');
+  } catch(e) {
+    console.error(e);
+    toast('⚠️ Gagal menyimpan file: ' + e.message);
+  }
+}
+
+function resetData() {
+  if (!confirm('Reset semua data ke nilai awal? Perubahan yang sudah disimpan akan hilang.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ================================================================
+// CHART INSTANCES
+// ================================================================
+const CH = {};
+const last = arr => arr[arr.length-1];
+const el = (id,txt) => { const e=document.getElementById(id); if(e) e.textContent=txt; };
+const gs = {color:'rgba(255,255,255,0.05)',drawBorder:false};
+Chart.defaults.color = '#7A8FA6';
+Chart.defaults.font  = {family:"'Plus Jakarta Sans',sans-serif",size:11};
+
+function mk(id, cfg) {
+  try {
+    if(CH[id]) { CH[id].destroy(); delete CH[id]; }
+    const el = document.getElementById(id);
+    if(!el) { console.warn('Canvas tidak ditemukan:', id); return null; }
+    CH[id] = new Chart(el, cfg);
+    return CH[id];
+  } catch(e) {
+    console.error('Chart error ['+id+']:', e);
+    return null;
+  }
+}
+
+function buildAll() {
+  mk('cPdrb',{type:'bar',data:{labels:D.pdrb.labels,datasets:[
+    {label:'PDRB (Rp M)',data:D.pdrb.values,backgroundColor:'rgba(21,101,192,0.5)',borderColor:'#1976D2',borderWidth:2,borderRadius:5,yAxisID:'y',order:2},
+    {label:'Laju (%)',data:D.pdrb.growth,type:'line',borderColor:'#F9A825',backgroundColor:'rgba(249,168,37,0.1)',pointBackgroundColor:'#F9A825',pointRadius:4,fill:false,tension:0.4,yAxisID:'y2',order:1}
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12}}},scales:{y:{grid:gs,ticks:{callback:v=>'Rp'+(v/1000).toFixed(0)+'T'}},y2:{position:'right',grid:{display:false},ticks:{callback:v=>v+'%'},min:-6,max:8},x:{grid:{display:false}}}}});
+
+  mk('cStruktur',{type:'doughnut',data:{labels:D.struktur.labels,datasets:[{data:D.struktur.values,backgroundColor:['#1976D2','#00897B','#F9A825','#7B1FA2','#E53935','#0097A7'],borderColor:'#0F2035',borderWidth:3,hoverOffset:8}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'right',labels:{boxWidth:10,padding:8,font:{size:10}}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}%`}}}}});
+
+  mk('cInflasi',{type:'bar',data:{labels:D.inflasi.labels,datasets:[{label:'Inflasi m-to-m (%)',data:D.inflasi.values,backgroundColor:D.inflasi.values.map(v=>v>0.4?'rgba(229,57,53,0.7)':'rgba(249,168,37,0.6)'),borderRadius:4,borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:gs,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+
+  mk('cInfk',{type:'bar',data:{labels:D.infk.labels,datasets:[{label:'Inflasi (%)',data:D.infk.values,backgroundColor:'rgba(249,168,37,0.55)',borderColor:'#F9A825',borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:gs,ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}});
+
+  mk('cMiskin',{type:'line',data:{labels:D.miskin.labels,datasets:[{label:'Kemiskinan (%)',data:D.miskin.values,borderColor:'#E53935',backgroundColor:'rgba(229,57,53,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#E53935',pointRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:gs,min:8,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+
+  mk('cTpt',{type:'bar',data:{labels:D.tpt.labels,datasets:[
+    {label:'TPT (%)',data:D.tpt.tpt,backgroundColor:'rgba(229,57,53,0.6)',borderRadius:5,yAxisID:'y'},
+    {label:'Angkatan Kerja (Ribu)',data:D.tpt.ak,type:'line',borderColor:'#64B5F6',pointBackgroundColor:'#64B5F6',fill:false,tension:0.4,yAxisID:'y2'}
+  ]},options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{y:{grid:gs,ticks:{callback:v=>v+'%'},min:3},y2:{position:'right',grid:{display:false},ticks:{callback:v=>v+'rb'}},x:{grid:{display:false}}}}});
+
+  mk('cInv',{type:'bar',data:{labels:D.inv.labels,datasets:[
+    {label:'PMA (Rp M)',data:D.inv.pma,backgroundColor:'rgba(0,137,123,0.7)',borderRadius:5},
+    {label:'PMDN (Rp M)',data:D.inv.pmdn,backgroundColor:'rgba(0,151,167,0.5)',borderRadius:5}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{y:{grid:gs,ticks:{callback:v=>'Rp'+v.toLocaleString()}},x:{grid:{display:false}}}}});
+
+  mk('cCsr',{type:'polarArea',data:{labels:D.csr.labels,datasets:[{data:D.csr.values,backgroundColor:['rgba(21,101,192,0.65)','rgba(229,57,53,0.65)','rgba(46,125,50,0.65)','rgba(249,168,37,0.65)','rgba(123,31,162,0.65)','rgba(0,151,167,0.65)'],borderColor:'var(--card)',borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:ctx=>` Rp ${ctx.raw} M`}}},scales:{r:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{display:false}}}}});
+
+  mk('cWisata',{type:'line',data:{labels:D.wisata.labels,datasets:[{label:'Wisatawan (Ribu)',data:D.wisata.values,borderColor:'#CE93D8',backgroundColor:'rgba(123,31,162,0.15)',fill:true,tension:0.5,pointBackgroundColor:'#CE93D8',pointRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:gs,ticks:{callback:v=>v+'rb'}},x:{grid:{display:false}}}}});
+
+  mk('cDest',{type:'bar',data:{labels:D.dest.labels,datasets:[{label:'Kunjungan (Ribu)',data:D.dest.values,backgroundColor:['rgba(123,31,162,0.7)','rgba(156,39,176,0.6)','rgba(186,104,200,0.6)','rgba(206,147,216,0.55)','rgba(225,190,231,0.5)'],borderRadius:5}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:gs,ticks:{callback:v=>v+'rb'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  mk('cUmkm',{type:'bar',data:{labels:D.umkm.labels,datasets:[{label:'Jumlah UMKM',data:D.umkm.values,backgroundColor:'rgba(123,31,162,0.55)',borderColor:'#CE93D8',borderWidth:1,borderRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:gs,ticks:{callback:v=>(v/1000).toFixed(0)+'rb'}},x:{grid:{display:false}}}}});
+
+  buildSparklines();
+  renderOPD();
+  renderOvTable();
+  updateBadges();
+  [['buildLapusaha',buildLapusaha],['buildSDA',buildSDA],['buildNTP',buildNTP],['buildEkspor',buildEkspor],['buildRPJMD',buildRPJMD]].forEach(([name,fn])=>{
+    try { fn(); } catch(e) { console.error('Error di '+name+':', e); }
+  });
+}
+
+// ================================================================
+// LAPANGAN USAHA & PENGELUARAN BPS 2025
+// ================================================================
+function buildLapusaha() {
+  mk('cLapusaha',{type:'bar',data:{
+    labels: D.lapusaha.labels,
+    datasets:[
+      {label:'2023',data:D.lapusaha.data2023,backgroundColor:'rgba(100,181,246,0.55)',borderRadius:3},
+      {label:'2024',data:D.lapusaha.data2024,backgroundColor:'rgba(249,168,37,0.6)',borderRadius:3},
+      {label:'2025',data:D.lapusaha.data2025,backgroundColor:'rgba(102,187,106,0.75)',borderRadius:3},
+    ]
+  },options:{
+    indexAxis:'y',responsive:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10}}},
+    scales:{
+      x:{grid:gs,ticks:{callback:v=>v+'%'},min:0,max:12},
+      y:{grid:{display:false},ticks:{font:{size:10}}}
+    }
+  }});
+
+  // Chart 1 — Distribusi: grouped bar 2024 vs 2025
+  mk('cPengeluaranDist',{type:'bar',data:{
+    labels: D.pengeluaran.labels,
+    datasets:[
+      {label:'2024 (%)',data:D.pengeluaran.distribusi2024,backgroundColor:'rgba(21,101,192,0.45)',borderRadius:4},
+      {label:'2025 (%)',data:D.pengeluaran.distribusi2025,backgroundColor:'rgba(21,101,192,0.85)',borderRadius:4},
+    ]
+  },options:{
+    responsive:true,maintainAspectRatio:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:9,padding:6,font:{size:10}}},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}%`}}
+    },
+    scales:{
+      y:{grid:gs,ticks:{callback:v=>v+'%',font:{size:9}},min:0,max:80},
+      x:{grid:{display:false},ticks:{font:{size:9}}}
+    }
+  }});
+
+  // Chart 2 — Pertumbuhan: grouped bar 2024 vs 2025
+  mk('cPengeluaranGrowth',{type:'bar',data:{
+    labels: D.pengeluaran.labels,
+    datasets:[
+      {label:'2024 (%)',data:D.pengeluaran.pertumbuhan2024,backgroundColor:'rgba(249,168,37,0.45)',borderRadius:4},
+      {label:'2025 (%)',data:D.pengeluaran.pertumbuhan2025,backgroundColor:'rgba(249,168,37,0.9)',borderRadius:4},
+    ]
+  },options:{
+    responsive:true,maintainAspectRatio:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:9,padding:6,font:{size:10}}},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}%`}}
+    },
+    scales:{
+      y:{grid:gs,ticks:{callback:v=>v+'%',font:{size:9}},min:0,max:14},
+      x:{grid:{display:false},ticks:{font:{size:9}}}
+    }
+  }});
+
+  // Chart distribusi 17 sektor — doughnut
+  const clrs17 = [
+    '#1976D2','#0097A7','#2E7D32','#F9A825','#7B1FA2',
+    '#E65100','#C62828','#00695C','#558B2F','#0277BD',
+    '#6A1B9A','#00838F','#37474F','#AD1457','#4527A0',
+    '#00897B','#F57F17'
+  ];
+  mk('cStruktur17',{type:'doughnut',data:{
+    labels: D.struktur17.labels,
+    datasets:[{
+      data: D.struktur17.dist2025,
+      backgroundColor: clrs17,
+      borderColor:'var(--card)',
+      borderWidth:2,
+      hoverOffset:6
+    }]
+  },options:{
+    responsive:true,cutout:'52%',
+    plugins:{
+      legend:{position:'right',labels:{boxWidth:9,padding:6,font:{size:9}}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw+'%'}}
+    }
+  }});
+
+  // Chart perbandingan distribusi 2024 vs 2025 — horizontal bar
+  // Hanya tampilkan 8 sektor terbesar
+  const top8idx = D.struktur17.dist2025
+    .map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v).slice(0,8).map(x=>x.i);
+  const top8lbl = top8idx.map(i=>D.struktur17.labels[i]);
+  const top8_24 = top8idx.map(i=>D.struktur17.dist2024[i]);
+  const top8_25 = top8idx.map(i=>D.struktur17.dist2025[i]);
+  mk('cStruktur17bar',{type:'bar',data:{
+    labels: top8lbl,
+    datasets:[
+      {label:'2024 (%)',data:top8_24,backgroundColor:'rgba(100,181,246,0.55)',borderRadius:4},
+      {label:'2025 (%)',data:top8_25,backgroundColor:'rgba(21,101,192,0.8)',borderRadius:4},
+    ]
+  },options:{
+    indexAxis:'y',responsive:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},
+    scales:{
+      x:{grid:gs,ticks:{callback:v=>v+'%'},min:0},
+      y:{grid:{display:false},ticks:{font:{size:10}}}
+    }
+  }});
+}
+
+// ================================================================
+// SDA CHARTS
+// ================================================================
+function buildSDA() {
+  mk('cPadi',{type:'bar',data:{labels:D.padi.labels,datasets:[{label:'Produksi Padi (Rb Ton)',data:D.padi.values,backgroundColor:'rgba(46,125,50,0.6)',borderColor:'#43A047',borderWidth:1,borderRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:gs,ticks:{callback:v=>v+'rb'},min:500},x:{grid:{display:false}}}}});
+
+  mk('cIkan',{type:'bar',data:{labels:D.ikan.labels,datasets:[
+    {label:'Tangkap (Ton)',data:D.ikan.tangkap,backgroundColor:'rgba(2,119,189,0.7)',borderRadius:5},
+    {label:'Budidaya (Ton)',data:D.ikan.budidaya,backgroundColor:'rgba(0,151,167,0.55)',borderRadius:5}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{y:{grid:gs,stacked:false,ticks:{callback:v=>(v/1000).toFixed(0)+'rb'}},x:{grid:{display:false}}}}});
+
+  mk('cTernak',{type:'bar',data:{labels:D.ternak.labels,datasets:[
+    {label:'Daging (Ton)',data:D.ternak.daging,backgroundColor:'rgba(229,81,0,0.65)',borderRadius:5,yAxisID:'y'},
+    {label:'Susu (Ribu Ltr)',data:D.ternak.susu.map(v=>v/1000),type:'line',borderColor:'#FFB300',pointBackgroundColor:'#FFB300',fill:false,tension:0.4,yAxisID:'y2'}
+  ]},options:{responsive:true,interaction:{mode:'index'},plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{y:{grid:gs,ticks:{callback:v=>v+'ton'}},y2:{position:'right',grid:{display:false},ticks:{callback:v=>v+'rb ltr'}},x:{grid:{display:false}}}}});
+
+  el('bd-padi',D.padi.values[D.padi.values.length-1]+' Rb Ton');
+  el('bd-ikan',(D.ikan.tangkap.slice(-1)[0]+D.ikan.budidaya.slice(-1)[0]).toLocaleString()+' Ton');
+  el('bd-ternak',D.ternak.daging.slice(-1)[0].toLocaleString()+' Ton');
+}
+
+// ================================================================
+// NTP & KETAHANAN PANGAN CHARTS
+// ================================================================
+function buildNTP() {
+  const rataProd = D.prodpadi.sawah.map((s,i)=>+((s*0.72 + D.prodpadi.gogo[i]*0.28)).toFixed(1));
+  mk('cProdpadi',{type:'bar',data:{labels:D.prodpadi.labels,datasets:[
+    {label:'Padi Sawah (Ku/Ha)',data:D.prodpadi.sawah,backgroundColor:'rgba(0,137,123,0.6)',borderRadius:5,order:2},
+    {label:'Padi Gogo (Ku/Ha)',data:D.prodpadi.gogo,backgroundColor:'rgba(0,137,123,0.25)',borderRadius:5,order:2},
+    {label:'Rata-rata Tertimbang',data:rataProd,type:'line',borderColor:'#F9A825',backgroundColor:'rgba(249,168,37,0.1)',pointBackgroundColor:'#F9A825',pointRadius:5,fill:false,tension:0.4,order:1}
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} Ku/Ha`}}},
+    scales:{y:{grid:gs,min:35,max:70,ticks:{callback:v=>v+' Ku/Ha',font:{size:9}}},x:{grid:{display:false},ticks:{font:{size:9}}}}
+  }});
+  el('bd-prodpadi', last(D.prodpadi.sawah)+' Ku/Ha');
+
+  mk('cLuaspanen',{type:'bar',data:{labels:D.prodpadi.labels,datasets:[
+    {label:'Luas Panen (Rb Ha)',data:D.prodpadi.luas,backgroundColor:'rgba(21,101,192,0.55)',borderRadius:5,order:2},
+    {label:'Tren',data:D.prodpadi.luas,type:'line',borderColor:'#64B5F6',backgroundColor:'rgba(100,181,246,0.08)',pointBackgroundColor:'#64B5F6',pointRadius:4,fill:true,tension:0.4,order:1}
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} Rb Ha`}}},
+    scales:{y:{grid:gs,min:85,max:105,ticks:{callback:v=>v+' Rb Ha',font:{size:9}}},x:{grid:{display:false},ticks:{font:{size:9}}}}
+  }});
+  el('bd-luaspanen', last(D.prodpadi.luas)+' Rb Ha');
+
+  mk('cPph',{type:'radar',data:{labels:D.pph.labels,datasets:[
+    {label:'Realisasi 2025',data:D.pph.values,backgroundColor:'rgba(0,137,123,0.25)',borderColor:'#00897B',pointBackgroundColor:'#00897B',pointRadius:4},
+    {label:'Target PPH',data:D.pph.target,backgroundColor:'rgba(249,168,37,0.1)',borderColor:'rgba(249,168,37,0.5)',borderDash:[4,4],pointRadius:3,pointBackgroundColor:'#F9A825'}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{r:{grid:{color:'rgba(255,255,255,0.07)'},ticks:{display:false,stepSize:5},pointLabels:{font:{size:10}}}}}});
+}
+
+// ================================================================
+// EKSPOR-IMPOR CHARTS
+// ================================================================
+function buildEkspor() {
+  mk('cEkspor',{type:'bar',data:{labels:D.ekspor.labels,datasets:[
+    {label:'Ekspor (USD Juta)',data:D.ekspor.ekspor,backgroundColor:'rgba(21,101,192,0.7)',borderRadius:5},
+    {label:'Impor (USD Juta)',data:D.ekspor.impor,backgroundColor:'rgba(229,57,53,0.5)',borderRadius:5},
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{y:{grid:gs,ticks:{callback:v=>'$'+v+'jt'}},x:{grid:{display:false}}}}});
+
+  mk('cKomoditas',{type:'bar',data:{labels:D.komoditas.labels,datasets:[{label:'Nilai Ekspor (USD Juta)',data:D.komoditas.values,backgroundColor:['rgba(21,101,192,0.75)','rgba(0,137,123,0.7)','rgba(46,125,50,0.65)','rgba(249,168,37,0.7)','rgba(229,81,0,0.65)'],borderRadius:5}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:gs,ticks:{callback:v=>'$'+v+'jt'}},y:{grid:{display:false}}}}});
+
+  el('bd-ekspor','Ekspor $'+D.ekspor.ekspor.slice(-1)[0]+' Juta');
+}
+
+// ================================================================
+// RPJMD MONITORING
+// ================================================================
+function buildRPJMD() {
+  const tb = document.getElementById('rpjmdTb'); if(!tb) return;
+
+  // Compute pct progress toward RPJMD target from baseline
+  const rows = RPJMD.map(r => {
+    let pct;
+    if(r.good==='dn') {
+      const range = r.baseline - r.target;
+      pct = range===0 ? 100 : ((r.baseline - r.capaian)/range)*100;
+    } else {
+      const range = r.target - r.baseline;
+      pct = range===0 ? 100 : ((r.capaian - r.baseline)/range)*100;
+    }
+    pct = Math.min(Math.max(pct, 0), 110);
+    const displayPct = Math.max(pct, 3); // floor agar bar selalu terlihat
+    let status, statusCls;
+    if(pct>=95){status='✅ On Track';statusCls='rpjmd-on';}
+    else if(pct>=75){status='⚠️ Perlu Perhatian';statusCls='rpjmd-warn';}
+    else{status='🔴 Off Track';statusCls='rpjmd-off';}
+    // gap
+    let gap, gapCls;
+    if(r.good==='dn'){
+      gap = (r.capaian - r.target).toFixed(2);
+      gapCls = parseFloat(gap)<=0?'gap-pos':parseFloat(gap)<=1?'gap-neu':'gap-neg';
+      gap = (parseFloat(gap)<=0?'':'+') + gap + r.satuan;
+    } else {
+      gap = (r.capaian - r.target).toFixed(2);
+      gapCls = parseFloat(gap)>=0?'gap-pos':parseFloat(gap)>=-5?'gap-neu':'gap-neg';
+      gap = (parseFloat(gap)>=0?'+':'')+gap+r.satuan;
+    }
+    return {...r, pct, displayPct, status, statusCls, gap, gapCls};
+  });
+
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td><span style="margin-right:6px">${r.ico}</span><strong>${r.ind}</strong></td>
+    <td style="color:var(--muted)">${r.baseline}${r.satuan}</td>
+    <td style="font-weight:600">${r.target}${r.satuan}</td>
+    <td style="font-weight:700;color:var(--text)">${r.capaian}${r.satuan}</td>
+    <td><span class="${r.gapCls}">${r.gap}</span></td>
+    <td><span class="${r.statusCls}">${r.status}</span></td>
+    <td><div class="prog"><div class="prog-f" style="width:${Math.min(r.displayPct,100)}%;background:${r.pct>=95?'#43A047':r.pct>=75?'#F9A825':'#E53935'}"></div></div><div style="font-size:9px;color:var(--dim);margin-top:2px">${r.pct.toFixed(0)}% dari target</div></td>
+  </tr>`).join('');
+
+  // Radar — pick 6 key indicators
+  const radarItems = rows.slice(0,6);
+  mk('cRpjmdRadar',{type:'radar',data:{labels:radarItems.map(r=>r.ind.split(' ')[0]+'…'),datasets:[
+    {label:'% Capaian RPJMD',data:radarItems.map(r=>r.pct.toFixed(1)*1),backgroundColor:'rgba(21,101,192,0.2)',borderColor:'#1976D2',pointBackgroundColor:'#1976D2',pointRadius:4},
+    {label:'Target 100%',data:radarItems.map(()=>100),backgroundColor:'rgba(249,168,37,0.06)',borderColor:'rgba(249,168,37,0.4)',borderDash:[5,5],pointRadius:0}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{r:{min:0,max:110,grid:{color:'rgba(255,255,255,0.07)'},ticks:{stepSize:25,callback:v=>v+'%',font:{size:9}},pointLabels:{font:{size:10}}}}}});
+
+  // Bar — all items
+  mk('cRpjmdBar',{type:'bar',data:{labels:rows.map(r=>r.ico+' '+r.ind.split('(')[0].trim()),datasets:[
+    {label:'% Capaian',data:rows.map(r=>parseFloat(r.displayPct.toFixed(1))),backgroundColor:rows.map(r=>r.pct>=95?'rgba(46,125,50,0.7)':r.pct>=75?'rgba(249,168,37,0.7)':'rgba(229,57,53,0.7)'),borderRadius:5}
+  ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:gs,min:0,max:115,ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+// ================================================================
+// SPARKLINES
+// ================================================================
+const SP_CFG = [
+  {id:'sp0',lbl:'sl0',data:[5.13,5.00,4.96,5.92],yrs:['2022','2023','2024','2025'],color:'#1976D2'},
+  {id:'sp1',lbl:'sl1',data:[3.62,3.38,2.87,2.65],yrs:['2022','2023','2024','2025'],color:'#F9A825'},
+  {id:'sp2',lbl:'sl2',data:[10.52,10.10,9.82,9.54],yrs:['2022','2023','2024','2025'],color:'#E53935'},
+  {id:'sp3',lbl:'sl3',data:[3.8,4.2,4.7,5.3],yrs:['2022','2023','2024','2025'],color:'#00897B'},
+  {id:'sp4',lbl:'sl4',data:[4.82,4.53,4.35,4.12],yrs:['2022','2023','2024','2025'],color:'#7B1FA2'},
+  {id:'sp5',lbl:'sl5',data:[46.12,47.85,49.52,50.93],yrs:['2022','2023','2024','2025'],color:'#388E3C'},
+  {id:'sp6',lbl:'sl6',data:[44.20,45.40,46.30,47.13],yrs:['2022','2023','2024','2025'],color:'#00897B'},
+  {id:'sp7',lbl:'sl7',data:[-4.21,-3.89,-3.58,-2.96],yrs:['2022','2023','2024','2025'],color:'#1976D2'},
+];
+
+function buildSparklines() {
+  SP_CFG.forEach(c => {
+    const ll = document.getElementById(c.lbl);
+    if(ll) ll.innerHTML = c.yrs.map(y=>`<span>${y}</span>`).join('');
+    if(CH[c.id]) CH[c.id].destroy();
+    CH[c.id] = new Chart(c.id, {
+      type:'line',
+      data:{labels:c.yrs,datasets:[{data:c.data,borderColor:c.color,backgroundColor:c.color+'22',borderWidth:2,fill:true,tension:0.4,
+        pointRadius:c.data.map((_,i)=>i===c.data.length-1?4:2),pointBackgroundColor:c.color,pointBorderWidth:0}]},
+      options:{responsive:false,maintainAspectRatio:false,animation:{duration:500},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw}`,title:ctx=>ctx[0].label},
+          backgroundColor:'#0B1E3D',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:6,titleFont:{size:10},bodyFont:{size:11,weight:'bold'},displayColors:false}},
+        scales:{x:{display:false},y:{display:false,min:Math.min(...c.data)*0.97,max:Math.max(...c.data)*1.03}}}
+    });
+  });
+}
+
+// ================================================================
+// OVERVIEW TABLE
+// ================================================================
+const OV_ROWS = [
+  {ico:'📈',lbl:'Pertumbuhan PDRB (%)',  v:[5.13,5.00,4.96,5.92],u:'%',good:'up'},
+  {ico:'💹',lbl:'Inflasi y-o-y (%)',     v:[3.62,3.38,2.87,2.65],u:'%',good:'dn'},
+  {ico:'👥',lbl:'Tingkat Kemiskinan (%)',v:[10.52,10.10,9.82,9.54],u:'%',good:'dn'},
+  {ico:'🏭',lbl:'Realisasi Investasi (T)',v:[3.8,4.2,4.7,5.3],u:'T',good:'up'},
+  {ico:'👷',lbl:'Pengangguran / TPT (%)',v:[4.82,4.53,4.35,4.12],u:'%',good:'dn'},
+  {ico:'🌾',lbl:'Prod. Padi (Ribu Ton)', v:[541,558,574,589],u:'',good:'up'},
+  {ico:'🐟',lbl:'Prod. Ikan (Ribu Ton)', v:[38.4,40.8,44.1,46.5],u:'',good:'up'},
+  {ico:'🎭',lbl:'Wisatawan (Ribu)',       v:[2340,3820,4520,5140],u:'',good:'up'},
+  {ico:'🤝',lbl:'UMKM (Ribu Unit)',       v:[361.9,373.1,384.3,396.5],u:'',good:'up'},
+];
+
+function renderOvTable() {
+  const tb = document.getElementById('ovTbody'); if(!tb) return;
+  tb.innerHTML = OV_ROWS.map(r => {
+    const last=r.v[3], prev=r.v[2];
+    const diff=Math.abs(last-prev).toFixed(2);
+    const isGood=(r.good==='up'&&last>prev)||(r.good==='dn'&&last<prev);
+    const cls=last===prev?'':'ov-pill '+(isGood?'ov-good':'ov-bad');
+    const arrow=last>prev?'▲':last<prev?'▼':'─';
+    return `<tr>
+      <td><span style="margin-right:7px">${r.ico}</span>${r.lbl}</td>
+      <td style="color:var(--muted)">${r.v[0]}${r.u}</td>
+      <td style="color:var(--muted)">${r.v[1]}${r.u}</td>
+      <td>${r.v[2]}${r.u}</td>
+      <td class="td-now">${r.v[3]}${r.u}</td>
+      <td><span class="${cls}">${arrow} ${diff}${r.u}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ================================================================
+// OPD TABLE
+// ================================================================
+function renderOPD() {
+  const tb = document.getElementById('opdTb'); if(!tb) return;
+  tb.innerHTML = OPD.map(o => {
+    const c = o.pct>=100?'#66BB6A':o.pct>=90?'#F9A825':'#EF9A9A';
+    return `<tr>
+      <td style="font-weight:600">${o.name}</td>
+      <td style="color:var(--muted)">${o.ind}</td>
+      <td>${o.target}</td>
+      <td style="font-weight:600;color:${c}">${o.real}</td>
+      <td style="font-weight:700;color:${c}">${o.pct}%</td>
+      <td><div class="prog"><div class="prog-f" style="width:${Math.min(o.pct,110)}%;background:${o.color}"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ================================================================
+// BADGES UPDATE
+// ================================================================
+function updateBadges() {
+  el('bd-pdrb','Laju '+last(D.pdrb.growth)+'%');
+  el('bd-inflasi','y-o-y '+D.inflasi.values.reduce((a,b)=>a+b,0).toFixed(2)+'%');
+  el('bd-miskin',last(D.miskin.values)+'%');
+  el('bd-tpt','TPT '+last(D.tpt.tpt)+'%');
+  el('bd-inv','Total Rp '+((last(D.inv.pma)+last(D.inv.pmdn))/1000).toFixed(1)+'T');
+  el('bd-umkm',last(D.umkm.values).toLocaleString()+' Unit');
+}
+
+// ================================================================
+// YEAR TOGGLE
+// ================================================================
+const YR = {
+  2022:{kv:['5,13','3,62','10,52','3,8','4,82'],u:['%','%','%','T','%'],kp:['▲ 0,25%','▼ 0,24%','▼ 0,42%','▲ 10,5%','▼ 0,29%'],cls:['up','up','up','up','up']},
+  2023:{kv:['5,00','3,38','10,10','4,2','4,53'],u:['%','%','%','T','%'],kp:['▼ 0,25%','▼ 0,24%','▼ 0,42%','▲ 10,5%','▼ 0,29%'],cls:['up','up','up','up','up']},
+  2024:{kv:['4,96','2,87','9,82','4,7','4,35'],u:['%','%','%','T','%'],kp:['▲ 0,34%','▼ 0,51%','▼ 0,28%','▲ 11,9%','▼ 0,18%'],cls:['up','up','up','up','up']},
+  2025:{kv:['5,92','2,65','9,54','5,3','4,12'],u:['%','%','%','T','%'],kp:['▲ 0,96%','▼ 0,22%','▼ 0,28%','▲ 0,6T','▼ 0,23%'],cls:['up','up','up','up','up']},
+};
+function setYr(y, btn) {
+  document.querySelectorAll('.yr-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const d=YR[y]; if(!d) return;
+  for(let i=0;i<5;i++){
+    const ve=document.getElementById('kv'+i); if(ve) ve.innerHTML=d.kv[i]+'<s>'+d.u[i]+'</s>';
+    const pe=document.getElementById('kp'+i); if(pe){ pe.textContent=d.kp[i]; pe.className='kpi-pill pill-'+d.cls[i]; }
+  }
+}
+
+// ================================================================
+// EDIT MODE
+// ================================================================
+let editOn = false;
+function toggleTools() {
+  const panel = document.getElementById('toolsPanel');
+  const arrow = document.getElementById('toolsArrow');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('up', !isOpen);
+  // Simpan preferensi
+  try { localStorage.setItem('tools_panel_open', !isOpen); } catch(e){}
+}
+
+function toggleEdit() {
+  editOn = !editOn;
+  document.getElementById('editBar').classList.toggle('on', editOn);
+  document.getElementById('main').classList.toggle('eo', editOn);
+  document.getElementById('editBtn').classList.toggle('on', editOn);
+  document.body.classList.toggle('edit-mode', editOn);
+  document.querySelectorAll('.cc').forEach(c=>c.classList.toggle('ea', editOn));
+  document.getElementById('editBtn').innerHTML = editOn ? '<span>✓</span> Mode Edit: ON' : '<span>✏️</span> Mode Edit Data';
+}
+function exitEdit() { if(editOn) toggleEdit(); }
+
+// ================================================================
+// MODAL SYSTEM
+// ================================================================
+let curE = null;
+let curApply = null;
+let impWB = null, impSheet = null, impData = null;
+
+function openM(key) { curE=key; showModal(key); }
+function openE(key) { curE=key; showModal(key); }
+function closeM() {
+  document.getElementById('modal').classList.remove('on');
+  document.body.style.overflow='';
+  curE=null; curApply=null;
+}
+function doApply() { if(curApply) curApply(); }
+
+function showModal(key) {
+  document.getElementById('modal').classList.add('on');
+  document.body.style.overflow='hidden';
+  document.getElementById('modalBox').style.width = '680px';
+
+  const ECFG = {
+    pdrb:    {title:'Edit Data PDRB',        cols:[{k:'labels',l:'Tahun',t:'text'},{k:'values',l:'PDRB (Rp M)',t:'num'},{k:'growth',l:'Laju Pertumbuhan (%)',t:'num'}]},
+    struktur:{title:'Edit Struktur PDRB',    cols:[{k:'labels',l:'Sektor',t:'text'},{k:'values',l:'Kontribusi (%)',t:'num'}]},
+    inflasi: {title:'Edit Inflasi Bulanan',  cols:[{k:'labels',l:'Bulan',t:'text'},{k:'values',l:'Inflasi m-to-m (%)',t:'num'}]},
+    infk:    {title:'Edit Inflasi Kelompok', cols:[{k:'labels',l:'Kelompok',t:'text'},{k:'values',l:'Inflasi (%)',t:'num'}]},
+    miskin:  {title:'Edit Data Kemiskinan',  cols:[{k:'labels',l:'Tahun',t:'text'},{k:'values',l:'% Miskin',t:'num'}]},
+    tpt:     {title:'Edit Ketenagakerjaan',  cols:[{k:'labels',l:'Tahun',t:'text'},{k:'tpt',l:'TPT (%)',t:'num'},{k:'ak',l:'Angkatan Kerja (Ribu)',t:'num'}]},
+    inv:     {title:'Edit Data Investasi',   cols:[{k:'labels',l:'Tahun',t:'text'},{k:'pma',l:'PMA (Rp M)',t:'num'},{k:'pmdn',l:'PMDN (Rp M)',t:'num'}]},
+    csr:     {title:'Edit Data CSR',         cols:[{k:'labels',l:'Sektor',t:'text'},{k:'values',l:'Nilai (Rp M)',t:'num'}]},
+    wisata:  {title:'Edit Wisatawan',        cols:[{k:'labels',l:'Tahun',t:'text'},{k:'values',l:'Kunjungan (Ribu)',t:'num'}]},
+    dest:    {title:'Edit Top Destinasi',    cols:[{k:'labels',l:'Destinasi',t:'text'},{k:'values',l:'Kunjungan (Ribu)',t:'num'}]},
+    umkm:    {title:'Edit Data UMKM',        cols:[{k:'labels',l:'Tahun',t:'text'},{k:'values',l:'Jumlah UMKM',t:'num'}]},
+    padi:    {title:'Edit Produksi Padi',    cols:[{k:'labels',l:'Tahun',t:'text'},{k:'values',l:'Produksi (Ribu Ton)',t:'num'}]},
+    ikan:    {title:'Edit Produksi Perikanan',cols:[{k:'labels',l:'Tahun',t:'text'},{k:'tangkap',l:'Tangkap (Ton)',t:'num'},{k:'budidaya',l:'Budidaya (Ton)',t:'num'}]},
+    ternak:  {title:'Edit Produksi Peternakan',cols:[{k:'labels',l:'Tahun',t:'text'},{k:'daging',l:'Daging (Ton)',t:'num'},{k:'susu',l:'Susu (Liter)',t:'num'}]},
+    prodpadi:{title:'Edit Produktivitas Padi',cols:[{k:'labels',l:'Tahun',t:'text'},{k:'sawah',l:'Sawah (Ku/Ha)',t:'num'},{k:'gogo',l:'Gogo (Ku/Ha)',t:'num'},{k:'luas',l:'Luas Panen (Rb Ha)',t:'num'}]},
+    pph:     {title:'Edit Skor PPH',         cols:[{k:'labels',l:'Kelompok Pangan',t:'text'},{k:'values',l:'Realisasi',t:'num'},{k:'target',l:'Target PPH',t:'num'}]},
+    ekspor:  {title:'Edit Data Ekspor-Impor',cols:[{k:'labels',l:'Tahun',t:'text'},{k:'ekspor',l:'Ekspor (USD Juta)',t:'num'},{k:'impor',l:'Impor (USD Juta)',t:'num'}]},
+    komoditas:{title:'Edit Ekspor per Komoditas',cols:[{k:'labels',l:'Komoditas',t:'text'},{k:'values',l:'Nilai Ekspor (USD Juta)',t:'num'}]},
+    lapusaha:{title:'Edit Pertumbuhan Lapangan Usaha',cols:[{k:'labels',l:'Lapangan Usaha',t:'text'},{k:'data2023',l:'2023 (%)',t:'num'},{k:'data2024',l:'2024 (%)',t:'num'},{k:'data2025',l:'2025 (%)',t:'num'}]},
+    struktur17:{title:'Edit Struktur PDRB 17 Sektor',cols:[{k:'labels',l:'Lapangan Usaha',t:'text'},{k:'dist2024',l:'Distribusi 2024 (%)',t:'num'},{k:'dist2025',l:'Distribusi 2025 (%)',t:'num'},{k:'growth2025',l:'Pertumbuhan 2025 (%)',t:'num'}]},
+    pengeluaran:{title:'Edit PDRB Pengeluaran',cols:[{k:'labels',l:'Komponen',t:'text'},{k:'distribusi2025',l:'Distribusi 2025 (%)',t:'num'},{k:'pertumbuhan2025',l:'Pertumbuhan 2025 (%)',t:'num'}]},
+  };
+
+  const CHART_MAP = {
+    pdrb:'cPdrb', struktur:'cStruktur', inflasi:'cInflasi', infk:'cInfk',
+    miskin:'cMiskin', tpt:'cTpt', inv:'cInv', csr:'cCsr', wisata:'cWisata',
+    dest:'cDest', umkm:'cUmkm',
+    padi:'cPadi', ikan:'cIkan', ternak:'cTernak',
+    prodpadi:'cProdpadi', luaspanen:'cLuaspanen', pph:'cPph',
+    ekspor:'cEkspor', komoditas:'cKomoditas',
+    lapusaha:'cLapusaha', pengeluaran:'cPengeluaranDist',
+    struktur17:'cStruktur17'
+  };
+
+  // Map key -> rebuild function (for modules not in buildAll's main loop)
+  const REBUILD_MAP = {
+    padi: buildSDA, ikan: buildSDA, ternak: buildSDA,
+    prodpadi: buildNTP, luaspanen: buildNTP, pph: buildNTP,
+    ekspor: buildEkspor, komoditas: buildEkspor,
+    lapusaha: buildLapusaha, pengeluaran: buildLapusaha, struktur17: buildLapusaha,
+  };
+
+  if(key==='import')  { document.getElementById('mTitle').textContent='📂 Import Data Excel'; renderImport(); return; }
+  if(key==='sumber')  { document.getElementById('mTitle').textContent='📋 Edit Info Sumber Data'; renderSumber(); return; }
+  if(key==='opd')     { document.getElementById('mTitle').textContent='✏️ Edit Kinerja OPD'; renderOpdEdit(); return; }
+  if(key==='rpjmd')   { document.getElementById('mTitle').textContent='✏️ Edit Data RPJMD'; renderRpjmdEdit(); return; }
+
+  const cfg = ECFG[key]; if(!cfg) return;
+  document.getElementById('mTitle').textContent = '✏️ '+cfg.title;
+  const d = D[key]; const n = d.labels.length;
+
+  let html = `<div class="hint">Ubah <strong>label/tahun</strong> dan <strong>nilai</strong>. Tombol <strong>+</strong> untuk tambah baris baru.</div>
+    <div class="de"><div class="de-head"><span>${cfg.title}</span><button class="add-btn" onclick="addRow('${key}')">+ Tambah</button></div>
+    <table><thead><tr>${cfg.cols.map(c=>`<th>${c.l}</th>`).join('')}<th></th></tr></thead>
+    <tbody id="eb-${key}">`;
+  for(let i=0;i<n;i++) html += buildRow(key, cfg.cols, i, d);
+  html += '</tbody></table></div>';
+  document.getElementById('mBody').innerHTML = html;
+
+  curApply = () => {
+    const tb = document.getElementById('eb-'+key); if(!tb) return;
+    const rows = Array.from(tb.querySelectorAll('tr'));
+    const nd = {};
+    cfg.cols.forEach(c => nd[c.k]=[]);
+    rows.forEach(tr => {
+      tr.querySelectorAll('input').forEach(inp => {
+        const k=inp.dataset.k;
+        nd[k].push(inp.type==='number'?parseFloat(inp.value)||0:inp.value);
+      });
+    });
+    Object.assign(D[key], nd);
+    // Rebuild only the relevant chart(s)
+    if(REBUILD_MAP[key]) {
+      REBUILD_MAP[key]();
+    } else {
+      buildAll();
+    }
+    updateBadges();
+    saveData();
+    closeM();
+    toast('✅ Data '+cfg.title+' diperbarui!');
+  };
+}
+
+function buildRow(key, cols, i, d) {
+  return `<tr id="r-${key}-${i}">${cols.map(c=>{
+    const v=d[c.k]!==undefined?d[c.k][i]:'';
+    return `<td><input class="ei" data-k="${c.k}" data-i="${i}" type="${c.t==='num'?'number':'text'}" step="any" value="${v}"></td>`;
+  }).join('')}<td><button class="del" onclick="delRow('${key}',${i})">✕</button></td></tr>`;
+}
+
+function addRow(key) {
+  const tb = document.getElementById('eb-'+key); if(!tb) return;
+  const i = tb.querySelectorAll('tr').length;
+  const cfg = {
+    pdrb:[{k:'labels'},{k:'values'},{k:'growth'}], struktur:[{k:'labels'},{k:'values'}],
+    inflasi:[{k:'labels'},{k:'values'}], infk:[{k:'labels'},{k:'values'}],
+    miskin:[{k:'labels'},{k:'values'}], tpt:[{k:'labels'},{k:'tpt'},{k:'ak'}],
+    inv:[{k:'labels'},{k:'pma'},{k:'pmdn'}], csr:[{k:'labels'},{k:'values'}],
+    wisata:[{k:'labels'},{k:'values'}], dest:[{k:'labels'},{k:'values'}], umkm:[{k:'labels'},{k:'values'}],
+    padi:[{k:'labels'},{k:'values'}],
+    ikan:[{k:'labels'},{k:'tangkap'},{k:'budidaya'}],
+    ternak:[{k:'labels'},{k:'daging'},{k:'susu'}],
+    prodpadi:[{k:'labels'},{k:'sawah'},{k:'gogo'},{k:'luas'}],
+    pph:[{k:'labels'},{k:'values'},{k:'target'}],
+    ekspor:[{k:'labels'},{k:'ekspor'},{k:'impor'}],
+    komoditas:[{k:'labels'},{k:'values'}],
+    lapusaha:[{k:'labels'},{k:'data2023'},{k:'data2024'},{k:'data2025'}],
+    struktur17:[{k:'labels'},{k:'dist2024'},{k:'dist2025'},{k:'growth2025'}],
+    pengeluaran:[{k:'labels'},{k:'distribusi2025'},{k:'pertumbuhan2025'}],
+  }[key]||[];
+  const tr=document.createElement('tr');tr.id=`r-${key}-${i}`;
+  tr.innerHTML=cfg.map(c=>`<td><input class="ei" data-k="${c.k}" data-i="${i}" type="text" value=""></td>`).join('')+`<td><button class="del" onclick="delRow('${key}',${i})">✕</button></td>`;
+  tb.appendChild(tr);
+  reIndex(key);
+}
+
+function delRow(key, i) {
+  const r=document.getElementById(`r-${key}-${i}`); if(r) r.remove();
+  reIndex(key);
+}
+
+function reIndex(key) {
+  const tb=document.getElementById('eb-'+key); if(!tb) return;
+  tb.querySelectorAll('tr').forEach((tr,i)=>{
+    tr.id=`r-${key}-${i}`;
+    tr.querySelectorAll('[data-i]').forEach(el=>el.dataset.i=i);
+    const db=tr.querySelector('.del'); if(db) db.setAttribute('onclick',`delRow('${key}',${i})`);
+  });
+}
+
+// ---- OPD EDITOR ----
+function renderOpdEdit() {
+  const cls=['#1976D2','#0097A7','#2E7D32','#7B1FA2','#E65100','#C62828','#00695C','#F9A825','#558B2F','#1565C0','#0277BD'];
+  let html=`<div class="hint">Edit nama OPD, indikator, target, realisasi, dan % capaian.</div>
+    <div class="de"><div class="de-head"><span>11 OPD Binaan</span><button class="add-btn" onclick="addOpd()">+ Tambah</button></div>
+    <table><thead><tr><th>Nama OPD</th><th>Indikator</th><th>Target</th><th>Realisasi</th><th>Capaian%</th><th></th></tr></thead>
+    <tbody id="eb-opd">`;
+  OPD.forEach((o,i)=>{ html+=`<tr id="ro-${i}">
+    <td><input class="ei" id="on-${i}" value="${o.name}"></td>
+    <td><input class="ei" id="oi-${i}" value="${o.ind}"></td>
+    <td><input class="ei" id="ot-${i}" value="${o.target}" style="width:65px"></td>
+    <td><input class="ei" id="or-${i}" value="${o.real}" style="width:65px"></td>
+    <td><input class="ei" id="op-${i}" type="number" step="0.1" value="${o.pct}" style="width:65px"></td>
+    <td><button class="del" onclick="delOpd(${i})">✕</button></td>
+  </tr>`; });
+  html+='</tbody></table></div>';
+  document.getElementById('mBody').innerHTML=html;
+  curApply=()=>{
+    const tb=document.getElementById('eb-opd'); if(!tb) return;
+    OPD=[];
+    tb.querySelectorAll('tr').forEach((tr,i)=>{
+      const ins=tr.querySelectorAll('input');
+      OPD.push({name:ins[0].value,ind:ins[1].value,target:ins[2].value,real:ins[3].value,pct:parseFloat(ins[4].value)||0,color:cls[i%cls.length]});
+    });
+    renderOPD(); saveData(); closeM(); toast('✅ Data OPD diperbarui!');
+  };
+}
+function addOpd(){
+  const tb=document.getElementById('eb-opd'); if(!tb) return;
+  const i=tb.querySelectorAll('tr').length;
+  const tr=document.createElement('tr');tr.id=`ro-${i}`;
+  tr.innerHTML=`<td><input class="ei" id="on-${i}" value="OPD Baru"></td><td><input class="ei" id="oi-${i}" value="Indikator"></td><td><input class="ei" id="ot-${i}" value="100" style="width:65px"></td><td><input class="ei" id="or-${i}" value="100" style="width:65px"></td><td><input class="ei" id="op-${i}" type="number" value="100" style="width:65px"></td><td><button class="del" onclick="delOpd(${i})">✕</button></td>`;
+  tb.appendChild(tr);
+}
+function delOpd(i){const r=document.getElementById(`ro-${i}`);if(r)r.remove();}
+
+// ---- RPJMD EDITOR ----
+function renderRpjmdEdit() {
+  let html=`<div class="hint">Edit indikator RPJMD: nama, baseline, target akhir, capaian 2025, dan arah baik (<strong>up</strong>=makin besar makin baik, <strong>dn</strong>=makin kecil makin baik).</div>
+    <div class="de"><div class="de-head"><span>Indikator RPJMD</span><button class="add-btn" onclick="addRpjmd()">+ Tambah</button></div>
+    <table><thead><tr><th>Indikator</th><th>Baseline</th><th>Target</th><th>Capaian</th><th>Satuan</th><th>Arah</th><th></th></tr></thead>
+    <tbody id="eb-rpjmd">`;
+  RPJMD.forEach((r,i)=>{ html+=`<tr id="rr-${i}">
+    <td><input class="ei" id="ri-${i}" value="${r.ind}" style="min-width:160px"></td>
+    <td><input class="ei" id="rb-${i}" type="number" step="any" value="${r.baseline}" style="width:70px"></td>
+    <td><input class="ei" id="rt-${i}" type="number" step="any" value="${r.target}" style="width:70px"></td>
+    <td><input class="ei" id="rc-${i}" type="number" step="any" value="${r.capaian}" style="width:70px"></td>
+    <td><input class="ei" id="rs-${i}" value="${r.satuan}" style="width:45px"></td>
+    <td><select class="ei" id="rg-${i}" style="width:55px"><option value="up" ${r.good==='up'?'selected':''}>up</option><option value="dn" ${r.good==='dn'?'selected':''}>dn</option></select></td>
+    <td><button class="del" onclick="delRpjmd(${i})">✕</button></td>
+  </tr>`; });
+  html+='</tbody></table></div>';
+  document.getElementById('mBody').innerHTML=html;
+  curApply=()=>{
+    const tb=document.getElementById('eb-rpjmd'); if(!tb) return;
+    RPJMD=[];
+    tb.querySelectorAll('tr').forEach((tr,i)=>{
+      const ind=document.getElementById('ri-'+i);
+      const bl=document.getElementById('rb-'+i);
+      const tg=document.getElementById('rt-'+i);
+      const cp=document.getElementById('rc-'+i);
+      const st=document.getElementById('rs-'+i);
+      const gd=document.getElementById('rg-'+i);
+      if(!ind) return;
+      RPJMD.push({
+        ind:ind.value, ico:'📊',
+        baseline:parseFloat(bl.value)||0,
+        target:parseFloat(tg.value)||0,
+        capaian:parseFloat(cp.value)||0,
+        satuan:st.value||'',
+        good:gd.value||'up'
+      });
+    });
+    buildRPJMD(); saveData(); closeM(); toast('✅ Data RPJMD diperbarui!');
+  };
+}
+function addRpjmd(){
+  const tb=document.getElementById('eb-rpjmd'); if(!tb) return;
+  const i=tb.querySelectorAll('tr').length;
+  const tr=document.createElement('tr');tr.id=`rr-${i}`;
+  tr.innerHTML=`
+    <td><input class="ei" id="ri-${i}" value="Indikator Baru" style="min-width:160px"></td>
+    <td><input class="ei" id="rb-${i}" type="number" step="any" value="0" style="width:70px"></td>
+    <td><input class="ei" id="rt-${i}" type="number" step="any" value="0" style="width:70px"></td>
+    <td><input class="ei" id="rc-${i}" type="number" step="any" value="0" style="width:70px"></td>
+    <td><input class="ei" id="rs-${i}" value="" style="width:45px"></td>
+    <td><select class="ei" id="rg-${i}" style="width:55px"><option value="up">up</option><option value="dn">dn</option></select></td>
+    <td><button class="del" onclick="delRpjmd(${i})">✕</button></td>`;
+  tb.appendChild(tr);
+}
+function delRpjmd(i){const r=document.getElementById(`rr-${i}`);if(r)r.remove();}
+
+// ---- SUMBER DATA EDITOR ----
+function renderSumber() {
+  document.getElementById('mBody').innerHTML=`
+    <div class="hint">Ubah keterangan yang tampil di footer sidebar.</div>
+    <div class="de"><div class="de-head"><span>Keterangan Data</span></div>
+    <table><tbody>
+      <tr><td style="padding:8px 10px;font-size:11px;color:var(--muted);width:100px">Data per</td>    <td><input class="ei" id="sf0" value="${document.getElementById('fLabel').textContent}"></td></tr>
+      <tr><td style="padding:8px 10px;font-size:11px;color:var(--muted)">Sumber</td>   <td><input class="ei" id="sf1" value="${document.getElementById('fSumber').textContent}"></td></tr>
+      <tr><td style="padding:8px 10px;font-size:11px;color:var(--muted)">Disusun</td>  <td><input class="ei" id="sf2" value="${document.getElementById('fPenyusun').textContent}"></td></tr>
+      <tr><td style="padding:8px 10px;font-size:11px;color:var(--muted)">Catatan</td>  <td><input class="ei" id="sf3" value="${document.getElementById('fCatatan').textContent}"></td></tr>
+    </tbody></table></div>`;
+  curApply=()=>{
+    ['fLabel','fSumber','fPenyusun','fCatatan'].forEach((id,i)=>{
+      const el=document.getElementById(id), inp=document.getElementById('sf'+i);
+      if(el&&inp) el.textContent=inp.value;
+    });
+    saveData(); closeM(); toast('✅ Info sumber data diperbarui!');
+  };
+}
+
+// ---- IMPORT EXCEL ----
+function renderImport() {
+  document.getElementById('mBody').innerHTML=`
+    <div class="hint">Upload file Excel. Nama sheet harus: <strong>PDRB, Inflasi, Kemiskinan, TPT, Investasi, CSR, Pariwisata, UMKM, OPD, SDA_Pertanian, NTP, Ekspor_Impor, RPJMD</strong>.</div>
+    <div class="smsg" id="imsg"></div>
+    <div class="dz" id="dz" ondragover="event.preventDefault();this.classList.add('dg')" ondragleave="this.classList.remove('dg')" ondrop="onDrop(event)">
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="onFile(event)">
+      <div style="font-size:30px;margin-bottom:8px">📊</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">Klik atau seret file Excel</div>
+      <div style="font-size:11px;color:var(--muted)">.xlsx / .xls / .csv</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:5px" id="fname">Belum ada file</div>
+    </div>
+    <div id="shWrap" style="display:none">
+      <div style="font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.8px">Pilih Sheet</div>
+      <div class="sh-tabs" id="shTabs"></div>
+    </div>
+    <div id="pvWrap" style="display:none">
+      <div style="font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.8px">Preview (10 baris)</div>
+      <div class="pv-wrap"><table class="pv-table" id="pvTable"></table></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="pvInfo"></div>
+    </div>`;
+  curApply = applyImport;
+}
+function onDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('dg');procFile(e.dataTransfer.files[0]);}
+function onFile(e){procFile(e.target.files[0]);}
+function procFile(f){
+  if(!f) return;
+  document.getElementById('fname').textContent='📄 '+f.name;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try {
+      impWB=XLSX.read(e.target.result,{type:'binary'});
+      const shs=impWB.SheetNames;
+      imsg('ok','✅ '+shs.length+' sheet: '+shs.join(', '));
+      const tabs=document.getElementById('shTabs'); tabs.innerHTML='';
+      shs.forEach(n=>{const b=document.createElement('div');b.className='sh-tab';b.textContent=n;b.onclick=()=>selSheet(n,b);tabs.appendChild(b);});
+      document.getElementById('shWrap').style.display='block';
+      selSheet(shs[0],tabs.children[0]);
+    } catch(er){imsg('er','❌ '+er.message);}
+  };
+  rd.readAsBinaryString(f);
+}
+function selSheet(n,btn){
+  impSheet=n;
+  document.querySelectorAll('#shTabs .sh-tab').forEach(t=>t.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  impData=XLSX.utils.sheet_to_json(impWB.Sheets[n],{header:1,defval:''});
+  const tbl=document.getElementById('pvTable'); tbl.innerHTML='';
+  if(impData&&impData.length){
+    const th=tbl.createTHead(),hr=th.insertRow();
+    (impData[0]||[]).forEach(c=>{const t=document.createElement('th');t.textContent=c||'—';hr.appendChild(t);});
+    const tb=tbl.createTBody();
+    impData.slice(1,11).forEach(row=>{const tr=tb.insertRow();(impData[0]||[]).forEach((_,ci)=>{const td=tr.insertCell();td.textContent=row[ci]!=null&&row[ci]!==''?row[ci]:'—';});});
+  }
+  document.getElementById('pvInfo').textContent=(impData.length-1)+' baris, '+(impData[0]||[]).length+' kolom';
+  document.getElementById('pvWrap').style.display='block';
+}
+function imsg(t,m){const e=document.getElementById('imsg');if(!e)return;e.className='smsg '+t;e.textContent=m;}
+function applyImport(){
+  if(!impSheet||!impData){imsg('er','⚠️ Pilih sheet terlebih dahulu.');return;}
+  const n=impSheet.toLowerCase(), d=impData.slice(1);
+  try{
+    if(n.includes('pdrb')){D.pdrb.labels=d.map(r=>String(r[0]));D.pdrb.values=d.map(r=>parseFloat(r[1])||0);D.pdrb.growth=d.map(r=>parseFloat(r[2])||0);}
+    else if(n.includes('inflasi')){D.inflasi.labels=d.map(r=>String(r[0]));D.inflasi.values=d.map(r=>parseFloat(r[1])||0);}
+    else if(n.includes('kemiskinan')||n.includes('miskin')){D.miskin.labels=d.map(r=>String(r[0]));D.miskin.values=d.map(r=>parseFloat(r[1])||0);}
+    else if(n.includes('tpt')||n.includes('pengangguran')){D.tpt.labels=d.map(r=>String(r[0]));D.tpt.tpt=d.map(r=>parseFloat(r[1])||0);D.tpt.ak=d.map(r=>parseFloat(r[2])||0);}
+    else if(n.includes('investasi')){D.inv.labels=d.map(r=>String(r[0]));D.inv.pma=d.map(r=>parseFloat(r[1])||0);D.inv.pmdn=d.map(r=>parseFloat(r[2])||0);}
+    else if(n.includes('csr')){D.csr.labels=d.map(r=>String(r[0]));D.csr.values=d.map(r=>parseFloat(r[1])||0);}
+    else if(n.includes('wisata')||n.includes('pariwisata')){D.wisata.labels=d.map(r=>String(r[0]));D.wisata.values=d.map(r=>parseFloat(r[1])||0);}
+    else if(n.includes('umkm')){D.umkm.labels=d.map(r=>String(r[0]));D.umkm.values=d.map(r=>parseFloat(r[1])||0);}
+    else if(n.includes('opd')||n.includes('kinerja')){      const cls=['#1976D2','#0097A7','#2E7D32','#7B1FA2','#E65100','#C62828','#00695C','#F9A825','#558B2F','#1565C0','#0277BD'];
+      OPD=d.filter(r=>r[0]).map((r,i)=>({name:String(r[0]),ind:String(r[1]||''),target:String(r[2]||''),real:String(r[3]||''),pct:parseFloat(r[4])||0,color:cls[i%cls.length]}));
+    } else if(n.includes('sda')||n.includes('pertanian')){D.padi.labels=d.map(r=>String(r[0]));D.padi.values=d.map(r=>parseFloat(r[1])||0);D.ikan.tangkap=d.map(r=>parseFloat(r[2])||0);D.ikan.budidaya=d.map(r=>parseFloat(r[3])||0);D.ternak.daging=d.map(r=>parseFloat(r[4])||0);D.ikan.labels=D.padi.labels;D.ternak.labels=D.padi.labels;}
+    else if(n.includes('prodpadi')){D.prodpadi.labels=d.map(r=>String(r[0]));D.prodpadi.sawah=d.map(r=>parseFloat(r[1])||0);D.prodpadi.gogo=d.map(r=>parseFloat(r[2])||0);D.prodpadi.luas=d.map(r=>parseFloat(r[3])||0);}
+    else if(n.includes('pph')){D.pph.labels=d.map(r=>String(r[0]));D.pph.values=d.map(r=>parseFloat(r[1])||0);D.pph.target=d.map(r=>parseFloat(r[2])||0);}
+    else if(n.includes('ekspor')||n.includes('impor')){D.ekspor.labels=d.map(r=>String(r[0]));D.ekspor.ekspor=d.map(r=>parseFloat(r[1])||0);D.ekspor.impor=d.map(r=>parseFloat(r[2])||0);}
+    else if(n.includes('rpjmd')){RPJMD=d.filter(r=>r[0]).map(r=>({ind:String(r[0]),ico:'📊',baseline:parseFloat(r[1])||0,target:parseFloat(r[2])||0,capaian:parseFloat(r[3])||0,satuan:'',good:'up'}));}
+    else {imsg('er','⚠️ Sheet tidak dikenali. Gunakan nama: PDRB, Inflasi, Kemiskinan, TPT, Investasi, CSR, Pariwisata, UMKM, OPD, SDA_Pertanian, NTP, Ekspor_Impor, RPJMD.');return;}
+    buildAll(); saveData(); closeM(); toast('✅ Data dari "'+impSheet+'" berhasil diimport!');
+  }catch(er){imsg('er','❌ '+er.message);}
+}
+
+// ================================================================
+// THEME SYSTEM
+// ================================================================
+const THEMES=[
+  {id:'dark',        name:'Navy Dark',       desc:'Default biru tua',    bg:'#0D1B2A',bars:['#1565C0','#00897B','#F9A825','#7B1FA2','#E53935']},
+  {id:'slate',       name:'Slate Gray',      desc:'Abu profesional',     bg:'#111827',bars:['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444']},
+  {id:'navy-gold',   name:'Navy Gold',       desc:'Emas mewah',          bg:'#06111F',bars:['#F9A825','#D4A017','#B8860B','#8B6914','#F0E6CC']},
+  {id:'forest',      name:'Forest Green',   desc:'Hijau alam',           bg:'#0A1A0E',bars:['#16A34A','#15803D','#166534','#14532D','#4ADE80']},
+  {id:'ocean',       name:'Deep Ocean',     desc:'Biru laut dalam',      bg:'#020E1A',bars:['#00B4D8','#0096C7','#0077B6','#023E8A','#48CAE4']},
+  {id:'purple-dark', name:'Midnight Purple',desc:'Ungu gelap elegan',    bg:'#120B1E',bars:['#8B5CF6','#7C3AED','#6D28D9','#5B21B6','#A78BFA']},
+  {id:'charcoal',    name:'Charcoal',       desc:'Hitam abu minimal',    bg:'#1A1A1A',bars:['#6B7280','#9CA3AF','#D1D5DB','#374151','#4B5563']},
+  {id:'midnight-red',name:'Midnight Red',   desc:'Merah gelap berani',   bg:'#150808',bars:['#DC2626','#B91C1C','#991B1B','#7F1D1D','#F87171']},
+  {id:'light',       name:'Light Mode',     desc:'Terang & bersih ☀️',   bg:'#F0F4F8',bars:['#1565C0','#00897B','#F9A825','#7B1FA2','#E53935']},
+];
+let activeTheme='dark';
+
+function openTheme(){
+  const g=document.getElementById('themeGrid');
+  g.innerHTML=THEMES.map(t=>`
+    <div class="tc ${t.id===activeTheme?'on':''}" onclick="applyTheme('${t.id}')" id="tc-${t.id}">
+      <div class="tc-check">✓</div>
+      <div class="tp" style="background:${t.bg}">${t.bars.map((c,i)=>`<div class="tb" style="background:${c};height:${28+i*8}px"></div>`).join('')}</div>
+      <div class="ti" style="background:${t.bg}">
+        <div class="ti-name" style="color:${t.id==='light'?'#1E293B':'#fff'}">${t.name}</div>
+        <div class="ti-desc" style="color:${t.id==='light'?'#64748B':'#fff'}">${t.desc}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('themeModal').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closeTheme(){document.getElementById('themeModal').classList.remove('on');document.body.style.overflow='';}
+function applyTheme(id){
+  activeTheme=id;
+  document.documentElement.setAttribute('data-theme',id);
+  document.querySelectorAll('.tc').forEach(c=>{const a=c.id==='tc-'+id;c.classList.toggle('on',a);const ch=c.querySelector('.tc-check');if(ch)ch.style.display=a?'flex':'none';});
+  toast('🎨 Tema "'+THEMES.find(t=>t.id===id).name+'" diterapkan!');
+}
+
+// ================================================================
+// DOWNLOAD TEMPLATE
+// ================================================================
+function dlTemplate(){
+  const wb=XLSX.utils.book_new();
+  const sheets={
+    'PDRB':[['Tahun','PDRB_ADHK_Miliar','Laju_Pertumbuhan_Pct'],[2019,89420,5.41],[2020,85310,-4.60],[2021,87640,2.73],[2022,93180,6.31],[2023,97820,4.98],[2024,102824,5.12],[2025,108200,5.23]],
+    'Inflasi':[['Bulan','Inflasi_MtM_Pct'],['Jan',0.38],['Feb',0.27],['Mar',0.48],['Apr',0.19],['Mei',0.21],['Jun',0.40],['Jul',0.25],['Agu',0.18],['Sep',0.32],['Okt',0.14],['Nov',0.22],['Des',0.55]],
+    'Kemiskinan':[['Tahun','Pct_Penduduk_Miskin'],[2018,11.24],[2019,10.80],[2020,11.45],[2021,11.02],[2022,10.52],[2023,10.10],[2024,9.82],[2025,9.54]],
+    'TPT':[['Tahun','TPT_Pct','Angkatan_Kerja_Ribu'],[2020,6.21,1310],[2021,5.84,1325],[2022,5.32,1342],[2023,4.53,1358],[2024,4.35,1371],[2025,4.12,1385]],
+    'Investasi':[['Tahun','PMA_Miliar','PMDN_Miliar'],[2020,890,1240],[2021,1120,1380],[2022,1450,1650],[2023,1680,2020],[2024,1920,2780],[2025,2180,3120]],
+    'CSR':[['Sektor','Nilai_Miliar'],['Pendidikan',24.1],['Kesehatan',20.3],['Lingkungan',13.5],['Infrastruktur',16.2],['UMKM',12.8],['Sosial',9.1]],
+    'Pariwisata':[['Tahun','Kunjungan_Ribu'],[2020,1240],[2021,980],[2022,2340],[2023,3820],[2024,4520],[2025,5140]],
+    'UMKM':[['Tahun','Jumlah_Unit'],[2020,342180],[2021,351240],[2022,361890],[2023,373120],[2024,384291],[2025,396450]],
+    'SDA_Pertanian':[['Tahun','Padi_RbTon','Ikan_Tangkap_Ton','Ikan_Budidaya_Ton','Daging_Ton'],[2020,528,18200,19800,48200],[2021,540,18800,21500,49800],[2022,555,19400,23800,51300],[2023,565,20100,26000,53100],[2024,574,20900,28400,54800],[2025,589,21600,31200,55620]],
+    'NTP':[['Sub_Sektor','Indeks_Terima_IT','Indeks_Bayar_IB'],['Tanaman Pangan',118.4,109.2],['Hortikultura',125.2,112.8],['Perkebunan',122.1,110.5],['Peternakan',115.6,108.4],['Perikanan',121.8,112.1]],
+    'Ekspor_Impor':[['Tahun','Ekspor_USD_Juta','Impor_USD_Juta'],[2020,128,95],[2021,145,108],[2022,162,122],[2023,172,131],[2024,179,138],[2025,185,144]],
+    'RPJMD':[['Indikator','Baseline_2020','Target_Akhir_RPJMD','Capaian_2025'],['Pertumbuhan Ekonomi (%)',4.78,5.50,5.23],['Tingkat Kemiskinan (%)',11.45,8.50,9.54],['TPT (%)',6.21,3.80,4.12],['Inflasi (%)',3.62,3.00,2.65],['Investasi (T)',1.9,5.5,5.3],['NTP (Indeks)',101.2,110.0,108.2]],
+    'OPD':[['Nama_OPD','Indikator','Target','Realisasi','Capaian_Pct'],
+      ['Badan Pendapatan Daerah','PAD (Rp Miliar)','1.380','1.462',105.9],
+      ['BKAD','Opini BPK','WTP','WTP',100],
+      ['Dinas Tenaga Kerja','TPT (%)','4,2','4,12',101.9],
+      ['Dinas Perindag','Nilai Ekspor (USD Juta)','190','185',97.4],
+      ['Dinas Pariwisata','Kunjungan (Ribu)','4.800','5.140',107.1],
+      ['Dinas Koperasi & UM','UMKM Naik Kelas','920','876',95.2],
+      ['DPMPTSP','Realisasi Investasi (T)','4,8','5,3',110.4],
+      ['Ketahanan Pangan','Skor PPH','87,0','86,1',98.9],
+      ['Dinas Nakeswan','Prod. Daging (Ton)','54.000','55.620',103.0],
+      ['Dinas Pertanian','Prod. Padi (Ton)','590.000','588.200',99.7],
+      ['Dinas Perikanan','Prod. Ikan (Ton)','44.000','46.380',105.4]]
+  };
+  Object.entries(sheets).forEach(([n,d])=>{const ws=XLSX.utils.aoa_to_sheet(d);ws['!cols']=d[0].map(()=>({wch:22}));XLSX.utils.book_append_sheet(wb,ws,n);});
+  XLSX.writeFile(wb,'Template_Dashboard_Ekonomi_Bappeda_2025.xlsx');
+}
+
+// ================================================================
+// PETA SPASIAL — Leaflet.js Choropleth (GeoJSON nyata Kab. Malang)
+// ================================================================
+
+// GeoJSON kecamatan Kabupaten Malang (koordinat real, disederhanakan)
+const KEC_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Kepanjen","idx":0},"geometry":{"type":"Polygon","coordinates":[[[112.5514,-8.1852],[112.5428,-8.1807],[112.534,-8.1833],[112.5429,-8.1583],[112.5394,-8.1439],[112.5497,-8.1296],[112.5453,-8.1245],[112.5494,-8.1185],[112.5545,-8.1201],[112.5646,-8.101],[112.5696,-8.1016],[112.5789,-8.0916],[112.5793,-8.0808],[112.593,-8.0875],[112.5889,-8.0956],[112.5993,-8.0974],[112.6051,-8.0907],[112.6015,-8.0827],[112.6045,-8.0826],[112.6158,-8.0906],[112.6148,-8.1008],[112.5956,-8.1213],[112.5863,-8.1403],[112.585,-8.1546],[112.5788,-8.1599],[112.5805,-8.1691],[112.5695,-8.1764],[112.562,-8.1756],[112.5514,-8.1852]]]}},{"type":"Feature","properties":{"name":"Singosari","idx":1},"geometry":{"type":"Polygon","coordinates":[[[112.705,-7.9264],[112.6787,-7.9189],[112.6761,-7.9261],[112.6627,-7.9302],[112.646,-7.914],[112.64,-7.9216],[112.6302,-7.9108],[112.6336,-7.9075],[112.6221,-7.879],[112.6197,-7.8601],[112.5953,-7.8085],[112.5947,-7.7918],[112.583,-7.779],[112.5884,-7.7656],[112.6043,-7.7711],[112.6199,-7.7998],[112.6277,-7.8081],[112.6502,-7.8177],[112.6498,-7.8279],[112.6566,-7.8355],[112.663,-7.8328],[112.6681,-7.8379],[112.6628,-7.8422],[112.6649,-7.8455],[112.6852,-7.8577],[112.6852,-7.8626],[112.6978,-7.8741],[112.714,-7.8693],[112.7134,-7.8818],[112.7056,-7.8902],[112.7116,-7.8909],[112.7104,-7.8942],[112.7401,-7.8959],[112.7454,-7.8948],[112.7511,-7.8833],[112.761,-7.8859],[112.7517,-7.9072],[112.7236,-7.906],[112.705,-7.9264]]]}},{"type":"Feature","properties":{"name":"Lawang","idx":2},"geometry":{"type":"Polygon","coordinates":[[[112.6678,-7.8384],[112.6624,-7.8325],[112.6566,-7.8355],[112.6498,-7.8279],[112.6502,-7.8177],[112.6277,-7.8081],[112.6137,-7.7899],[112.6156,-7.7872],[112.6284,-7.7915],[112.6324,-7.7976],[112.6542,-7.797],[112.6614,-7.8059],[112.7047,-7.8171],[112.7111,-7.8239],[112.7114,-7.819],[112.7329,-7.8181],[112.7331,-7.8226],[112.7391,-7.8239],[112.739,-7.8386],[112.7497,-7.8509],[112.76,-7.8544],[112.7618,-7.8783],[112.7509,-7.8834],[112.7454,-7.8948],[112.7104,-7.8942],[112.7116,-7.8909],[112.7056,-7.8902],[112.7134,-7.8818],[112.714,-7.8693],[112.6995,-7.8755],[112.6852,-7.8626],[112.6852,-7.8577],[112.6649,-7.8455],[112.6628,-7.8422],[112.6678,-7.8384]]]}},{"type":"Feature","properties":{"name":"Pakis","idx":3},"geometry":{"type":"Polygon","coordinates":[[[112.7224,-8.0017],[112.6832,-8.0055],[112.6935,-7.9857],[112.6902,-7.9757],[112.6788,-7.9766],[112.6574,-7.9652],[112.6636,-7.9588],[112.6639,-7.9482],[112.6689,-7.9462],[112.6627,-7.9302],[112.6761,-7.9261],[112.6787,-7.9189],[112.705,-7.9264],[112.7112,-7.9168],[112.717,-7.9173],[112.7215,-7.9286],[112.7273,-7.9212],[112.7232,-7.9194],[112.7322,-7.9158],[112.7337,-7.922],[112.725,-7.9364],[112.727,-7.9449],[112.7386,-7.9546],[112.7366,-7.9596],[112.7449,-7.9603],[112.7511,-7.9695],[112.743,-7.9737],[112.7494,-7.9791],[112.7596,-7.9765],[112.7587,-7.9835],[112.7379,-7.9907],[112.7125,-7.9856],[112.7268,-7.9921],[112.7224,-8.0017]]]}},{"type":"Feature","properties":{"name":"Tumpang","idx":4},"geometry":{"type":"Polygon","coordinates":[[[112.7269,-8.0224],[112.7219,-8.0312],[112.7095,-8.0309],[112.7021,-8.0383],[112.6724,-8.0232],[112.6721,-8.009],[112.7211,-8.0033],[112.727,-7.9923],[112.7125,-7.9856],[112.7279,-7.9912],[112.7585,-7.9839],[112.7656,-7.9896],[112.8072,-8.0002],[112.8454,-7.986],[112.8353,-8.0018],[112.8419,-8.0156],[112.8217,-8.0258],[112.7852,-8.0307],[112.757,-8.0204],[112.7524,-8.0272],[112.7564,-8.0285],[112.7549,-8.0342],[112.7269,-8.0224]]]}},{"type":"Feature","properties":{"name":"Poncokusumo","idx":5},"geometry":{"type":"Polygon","coordinates":[[[112.7725,-8.1117],[112.7593,-8.1048],[112.759,-8.0952],[112.7433,-8.0905],[112.7423,-8.0818],[112.7342,-8.0807],[112.7223,-8.0535],[112.7028,-8.0367],[112.7095,-8.0309],[112.7219,-8.0312],[112.7209,-8.0258],[112.7266,-8.0224],[112.7549,-8.0342],[112.7564,-8.0285],[112.7524,-8.0272],[112.757,-8.0204],[112.7852,-8.0307],[112.8289,-8.0232],[112.8419,-8.0156],[112.8357,-8.0007],[112.8599,-7.9728],[112.8741,-7.9455],[112.885,-7.9523],[112.9039,-7.947],[112.9129,-7.9567],[112.9154,-7.9513],[112.9352,-7.956],[112.9271,-7.9605],[112.9261,-7.9665],[112.9451,-7.9751],[112.9457,-7.9797],[112.9407,-7.9819],[112.9386,-7.9991],[112.9251,-8.0005],[112.9337,-8.0138],[112.9226,-8.032],[112.9156,-8.0323],[112.9106,-8.0386],[112.9091,-8.0517],[112.9001,-8.0619],[112.9054,-8.0809],[112.9134,-8.0807],[112.9203,-8.0879],[112.9219,-8.1079],[112.8726,-8.1118],[112.8335,-8.0961],[112.8208,-8.0983],[112.7842,-8.1182],[112.7713,-8.1193],[112.7725,-8.1117]]]}},{"type":"Feature","properties":{"name":"Wajak","idx":6},"geometry":{"type":"Polygon","coordinates":[[[112.7427,-8.144],[112.7237,-8.1455],[112.7218,-8.1402],[112.7055,-8.1412],[112.71,-8.124],[112.7012,-8.1244],[112.6986,-8.1166],[112.6885,-8.117],[112.6883,-8.1041],[112.6964,-8.1012],[112.6986,-8.0825],[112.7238,-8.0815],[112.7237,-8.0749],[112.7087,-8.07],[112.7223,-8.0608],[112.7342,-8.0807],[112.7423,-8.0818],[112.7433,-8.0905],[112.759,-8.0952],[112.7593,-8.1048],[112.7727,-8.1119],[112.7713,-8.1193],[112.7842,-8.1182],[112.8208,-8.0983],[112.8335,-8.0961],[112.8661,-8.1078],[112.8567,-8.1133],[112.8378,-8.1426],[112.7938,-8.1695],[112.787,-8.1651],[112.7764,-8.1679],[112.7697,-8.1517],[112.7427,-8.144]]]}},{"type":"Feature","properties":{"name":"Turen","idx":7},"geometry":{"type":"Polygon","coordinates":[[[112.6647,-8.2331],[112.6509,-8.2361],[112.645,-8.2318],[112.6391,-8.2378],[112.6485,-8.2063],[112.669,-8.2049],[112.6754,-8.1937],[112.668,-8.1817],[112.6736,-8.1686],[112.672,-8.1616],[112.6649,-8.1593],[112.6865,-8.1194],[112.6964,-8.1161],[112.7012,-8.1244],[112.71,-8.124],[112.7055,-8.1412],[112.7218,-8.1402],[112.73,-8.1474],[112.7427,-8.144],[112.7747,-8.1563],[112.7715,-8.1626],[112.7614,-8.1613],[112.7571,-8.1532],[112.7296,-8.1576],[112.7258,-8.1682],[112.7161,-8.1738],[112.7046,-8.1921],[112.7082,-8.2007],[112.6989,-8.211],[112.6994,-8.2242],[112.6806,-8.2342],[112.6757,-8.2321],[112.6764,-8.2357],[112.6665,-8.2368],[112.6647,-8.2331]]]}},{"type":"Feature","properties":{"name":"Gondanglegi","idx":8},"geometry":{"type":"Polygon","coordinates":[[[112.637,-8.1873],[112.6118,-8.1762],[112.6122,-8.1663],[112.5891,-8.1543],[112.5818,-8.1706],[112.5781,-8.1719],[112.5772,-8.1705],[112.5957,-8.1212],[112.6058,-8.1249],[112.6104,-8.116],[112.6152,-8.1182],[112.6224,-8.1098],[112.6269,-8.1114],[112.6257,-8.1168],[112.6367,-8.1182],[112.6405,-8.1314],[112.6757,-8.1337],[112.671,-8.154],[112.6649,-8.1593],[112.672,-8.1616],[112.6736,-8.1686],[112.668,-8.1817],[112.6694,-8.1892],[112.6758,-8.1925],[112.669,-8.2049],[112.6503,-8.2062],[112.6288,-8.1984],[112.6256,-8.1944],[112.637,-8.1873]]]}},{"type":"Feature","properties":{"name":"Bululawang","idx":9},"geometry":{"type":"Polygon","coordinates":[[[112.6364,-8.1183],[112.6257,-8.1168],[112.6269,-8.1114],[112.6224,-8.1098],[112.6152,-8.1182],[112.6104,-8.116],[112.6058,-8.1249],[112.5962,-8.1206],[112.6106,-8.1084],[112.6149,-8.0898],[112.6282,-8.081],[112.6293,-8.07],[112.6411,-8.0545],[112.6428,-8.0619],[112.6526,-8.0646],[112.6482,-8.0703],[112.6538,-8.0825],[112.6714,-8.0834],[112.6782,-8.0755],[112.6823,-8.0772],[112.6808,-8.0841],[112.688,-8.0835],[112.6874,-8.0927],[112.6969,-8.0939],[112.6964,-8.1012],[112.6883,-8.1041],[112.6891,-8.1185],[112.6757,-8.1337],[112.6405,-8.1314],[112.6364,-8.1183]]]}},{"type":"Feature","properties":{"name":"Tajinan","idx":10},"geometry":{"type":"Polygon","coordinates":[[[112.6823,-8.0772],[112.6538,-8.0825],[112.6482,-8.0703],[112.6526,-8.0646],[112.6428,-8.0619],[112.643,-8.0544],[112.6294,-8.0681],[112.6317,-8.046],[112.6454,-8.0481],[112.6458,-8.0516],[112.6547,-8.0491],[112.6771,-8.0251],[112.6975,-8.0342],[112.7223,-8.0535],[112.7223,-8.0608],[112.7087,-8.07],[112.7237,-8.0749],[112.7229,-8.0822],[112.6986,-8.0824],[112.6956,-8.0936],[112.6874,-8.0927],[112.688,-8.0835],[112.6808,-8.0841],[112.6823,-8.0772]]]}},{"type":"Feature","properties":{"name":"Pakisaji","idx":11},"geometry":{"type":"Polygon","coordinates":[[[112.6015,-8.0827],[112.6052,-8.0904],[112.5993,-8.0974],[112.5889,-8.0956],[112.5931,-8.0875],[112.5764,-8.0801],[112.5764,-8.0623],[112.5636,-8.0601],[112.5567,-8.0489],[112.5506,-8.0471],[112.5521,-8.0393],[112.5613,-8.0422],[112.5575,-8.0326],[112.5653,-8.0231],[112.5936,-8.0359],[112.5999,-8.0505],[112.612,-8.0218],[112.6309,-8.035],[112.6283,-8.0808],[112.6163,-8.0899],[112.6015,-8.0827]]]}},{"type":"Feature","properties":{"name":"Ngajum","idx":12},"geometry":{"type":"Polygon","coordinates":[[[112.5545,-8.1201],[112.5494,-8.1185],[112.5443,-8.1251],[112.539,-8.1196],[112.5297,-8.1253],[112.5265,-8.104],[112.5349,-8.1021],[112.5359,-8.0953],[112.52,-8.0675],[112.5095,-8.0306],[112.4964,-8.0285],[112.4805,-8.0051],[112.4773,-7.9731],[112.5112,-7.9867],[112.5063,-8.0059],[112.5215,-8.007],[112.5438,-8.0269],[112.5393,-8.0192],[112.5438,-8.0205],[112.5609,-8.0392],[112.5612,-8.0424],[112.5521,-8.0393],[112.5513,-8.0481],[112.5567,-8.0489],[112.5636,-8.0601],[112.5764,-8.0623],[112.5789,-8.0916],[112.5696,-8.1016],[112.5646,-8.101],[112.5545,-8.1201]]]}},{"type":"Feature","properties":{"name":"Wagir","idx":13},"geometry":{"type":"Polygon","coordinates":[[[112.565,-8.0236],[112.5575,-8.0326],[112.543,-8.0199],[112.5393,-8.0192],[112.5438,-8.0269],[112.5335,-8.0209],[112.5215,-8.007],[112.5066,-8.0061],[112.5112,-7.9867],[112.4857,-7.9751],[112.4965,-7.9745],[112.5076,-7.9818],[112.5013,-7.9705],[112.5184,-7.9758],[112.5369,-7.9642],[112.5592,-7.976],[112.5592,-7.9712],[112.5646,-7.973],[112.5712,-7.968],[112.582,-7.9673],[112.5918,-7.973],[112.5975,-7.9791],[112.5969,-7.9838],[112.5793,-7.979],[112.5765,-7.9837],[112.5915,-7.986],[112.5892,-7.9923],[112.6014,-7.9955],[112.5974,-8.006],[112.6065,-8.0135],[112.6146,-8.0089],[112.6188,-8.0112],[112.6058,-8.0294],[112.6034,-8.0487],[112.5999,-8.0505],[112.5936,-8.0359],[112.565,-8.0236]]]}},{"type":"Feature","properties":{"name":"Dau","idx":14},"geometry":{"type":"Polygon","coordinates":[[[112.599,-7.9585],[112.6033,-7.9705],[112.5993,-7.9734],[112.582,-7.9673],[112.5592,-7.9712],[112.5592,-7.976],[112.5371,-7.9642],[112.5184,-7.9758],[112.5013,-7.9705],[112.5076,-7.9818],[112.4965,-7.9745],[112.4802,-7.9752],[112.4773,-7.9643],[112.4643,-7.9516],[112.4841,-7.9314],[112.5414,-7.9263],[112.5631,-7.9138],[112.5802,-7.9175],[112.5834,-7.9094],[112.5999,-7.9261],[112.599,-7.9363],[112.5738,-7.9354],[112.5689,-7.9389],[112.599,-7.9585]]]}},{"type":"Feature","properties":{"name":"Karangploso","idx":15},"geometry":{"type":"Polygon","coordinates":[[[112.6111,-7.9199],[112.6131,-7.9252],[112.5973,-7.9229],[112.5843,-7.9095],[112.595,-7.906],[112.5926,-7.8986],[112.5799,-7.8868],[112.5725,-7.8892],[112.5643,-7.8795],[112.5716,-7.8173],[112.5847,-7.7807],[112.5947,-7.7918],[112.5953,-7.8085],[112.6197,-7.8601],[112.6221,-7.879],[112.6336,-7.9075],[112.6111,-7.9199]]]}},{"type":"Feature","properties":{"name":"Pujon","idx":16},"geometry":{"type":"Polygon","coordinates":[[[112.4841,-7.9242],[112.4679,-7.9472],[112.4613,-7.9406],[112.4479,-7.9128],[112.4415,-7.9111],[112.4113,-7.8797],[112.4107,-7.8702],[112.4012,-7.8653],[112.3821,-7.871],[112.3946,-7.8629],[112.3961,-7.8547],[112.3998,-7.8563],[112.4038,-7.8494],[112.3885,-7.8289],[112.3971,-7.8234],[112.4069,-7.8268],[112.4081,-7.8232],[112.3922,-7.8033],[112.3869,-7.804],[112.3908,-7.7958],[112.3796,-7.7858],[112.4057,-7.7805],[112.4175,-7.7643],[112.4302,-7.7708],[112.4363,-7.7654],[112.4425,-7.7762],[112.4556,-7.7792],[112.463,-7.769],[112.4895,-7.7655],[112.4995,-7.8165],[112.4936,-7.8275],[112.4946,-7.854],[112.4868,-7.8587],[112.4878,-7.8776],[112.4773,-7.892],[112.4841,-7.9242]]]}},{"type":"Feature","properties":{"name":"Ngantang","idx":17},"geometry":{"type":"Polygon","coordinates":[[[112.4141,-7.9462],[112.3627,-7.9562],[112.3634,-7.9511],[112.3556,-7.9454],[112.3389,-7.9446],[112.3134,-7.929],[112.3066,-7.9293],[112.3138,-7.9205],[112.3125,-7.9028],[112.3234,-7.8919],[112.3253,-7.8706],[112.3493,-7.8516],[112.3408,-7.8493],[112.3409,-7.8429],[112.3517,-7.8392],[112.3541,-7.8227],[112.3635,-7.8085],[112.3764,-7.8095],[112.3833,-7.803],[112.3922,-7.8033],[112.3998,-7.8177],[112.4042,-7.818],[112.4071,-7.8267],[112.3971,-7.8234],[112.3885,-7.8289],[112.4038,-7.8494],[112.3822,-7.8712],[112.3995,-7.8654],[112.4049,-7.8706],[112.4079,-7.8682],[112.4113,-7.8797],[112.4518,-7.9185],[112.4521,-7.9265],[112.4469,-7.9314],[112.4322,-7.9303],[112.4141,-7.9462]]]}},{"type":"Feature","properties":{"name":"Kasembon","idx":18},"geometry":{"type":"Polygon","coordinates":[[[112.3543,-7.8229],[112.3517,-7.8392],[112.34,-7.8462],[112.3493,-7.8516],[112.3253,-7.8706],[112.3182,-7.8615],[112.3194,-7.8391],[112.3076,-7.8389],[112.3069,-7.7993],[112.2883,-7.7795],[112.2878,-7.7707],[112.2994,-7.7694],[112.3196,-7.7778],[112.3394,-7.7744],[112.3396,-7.7681],[112.3491,-7.7615],[112.3668,-7.7684],[112.3798,-7.7862],[112.386,-7.7875],[112.3903,-7.8017],[112.3764,-7.8095],[112.3635,-7.8085],[112.3543,-7.8229]]]}},{"type":"Feature","properties":{"name":"Sumberpucung","idx":19},"geometry":{"type":"Polygon","coordinates":[[[112.5415,-8.1586],[112.534,-8.1834],[112.5098,-8.1932],[112.4961,-8.1936],[112.4735,-8.1796],[112.4644,-8.1794],[112.4584,-8.1689],[112.4338,-8.1565],[112.4402,-8.1488],[112.457,-8.1465],[112.462,-8.1367],[112.4699,-8.1435],[112.4915,-8.1489],[112.5111,-8.1419],[112.5415,-8.1586]]]}},{"type":"Feature","properties":{"name":"Kromengan","idx":20},"geometry":{"type":"Polygon","coordinates":[[[112.5391,-8.1513],[112.5416,-8.1561],[112.5333,-8.1565],[112.5068,-8.1411],[112.5061,-8.1468],[112.4905,-8.1487],[112.4699,-8.1435],[112.462,-8.1367],[112.4543,-8.1468],[112.4592,-8.1149],[112.4532,-8.0976],[112.4587,-8.0671],[112.4635,-8.0677],[112.4626,-8.0776],[112.4671,-8.0771],[112.4687,-8.0951],[112.4914,-8.0936],[112.4989,-8.1268],[112.5032,-8.1267],[112.5049,-8.1194],[112.5098,-8.1267],[112.5198,-8.121],[112.525,-8.1294],[112.539,-8.1196],[112.5488,-8.1255],[112.5391,-8.1513]]]}},{"type":"Feature","properties":{"name":"Wonosari","idx":21},"geometry":{"type":"Polygon","coordinates":[[[112.5265,-8.1041],[112.529,-8.1268],[112.5243,-8.1293],[112.5182,-8.1205],[112.508,-8.1263],[112.5049,-8.1194],[112.5032,-8.1267],[112.4989,-8.1268],[112.4914,-8.0936],[112.4687,-8.0951],[112.4635,-8.0677],[112.4542,-8.0638],[112.458,-8.0447],[112.4745,-8.0138],[112.4684,-7.9994],[112.4773,-7.9731],[112.4805,-8.0051],[112.4964,-8.0285],[112.5095,-8.0306],[112.52,-8.0675],[112.5359,-8.0953],[112.5349,-8.1021],[112.5265,-8.1041]]]}},{"type":"Feature","properties":{"name":"Pagak","idx":22},"geometry":{"type":"Polygon","coordinates":[[[112.5068,-8.3134],[112.5016,-8.3257],[112.4855,-8.3148],[112.4857,-8.3106],[112.4714,-8.3082],[112.4654,-8.295],[112.4819,-8.2891],[112.4807,-8.2841],[112.4909,-8.2802],[112.4868,-8.2652],[112.4938,-8.2195],[112.4865,-8.1863],[112.4946,-8.1931],[112.506,-8.1938],[112.5425,-8.1807],[112.5503,-8.1865],[112.5533,-8.1835],[112.5649,-8.2119],[112.5586,-8.2283],[112.5456,-8.2367],[112.5468,-8.2643],[112.5518,-8.2656],[112.5507,-8.2848],[112.5393,-8.298],[112.5071,-8.2935],[112.5068,-8.3134]]]}},{"type":"Feature","properties":{"name":"Donomulyo","idx":23},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.4248,-8.3899],[112.4246,-8.3897],[112.4248,-8.3896],[112.4248,-8.3899]]],[[[112.425,-8.3874],[112.4255,-8.3883],[112.4248,-8.3885],[112.425,-8.3874]]],[[[112.4237,-8.3872],[112.4237,-8.3871],[112.4238,-8.3871],[112.4237,-8.3872]]],[[[112.4243,-8.3873],[112.4242,-8.387],[112.4245,-8.387],[112.4243,-8.3873]]],[[[112.396,-8.3802],[112.3961,-8.3799],[112.3963,-8.3801],[112.396,-8.3802]]],[[[112.3735,-8.3789],[112.3737,-8.3788],[112.3737,-8.3789],[112.3735,-8.3789]]],[[[112.3744,-8.3771],[112.3742,-8.3777],[112.3741,-8.3777],[112.3744,-8.3771]]],[[[112.4063,-8.3786],[112.3929,-8.3799],[112.3945,-8.3767],[112.3881,-8.372],[112.3831,-8.376],[112.3719,-8.3746],[112.3599,-8.3484],[112.3706,-8.3126],[112.3884,-8.2853],[112.3789,-8.2375],[112.4049,-8.2348],[112.4029,-8.2411],[112.4161,-8.2429],[112.4163,-8.2588],[112.4321,-8.2601],[112.4309,-8.2677],[112.4555,-8.2712],[112.4657,-8.2675],[112.4657,-8.2576],[112.4742,-8.2582],[112.4726,-8.2717],[112.4779,-8.2747],[112.4869,-8.2714],[112.4909,-8.2802],[112.4807,-8.2841],[112.4819,-8.2891],[112.4654,-8.2949],[112.4676,-8.3034],[112.474,-8.3092],[112.4857,-8.3106],[112.4855,-8.3148],[112.5016,-8.3257],[112.507,-8.3378],[112.4975,-8.3413],[112.4986,-8.3531],[112.4899,-8.3664],[112.4924,-8.3737],[112.4864,-8.3897],[112.4818,-8.3914],[112.4842,-8.3962],[112.4711,-8.3928],[112.4644,-8.3964],[112.463,-8.3956],[112.4574,-8.3958],[112.4529,-8.3974],[112.4523,-8.3947],[112.4433,-8.3982],[112.4212,-8.3813],[112.4063,-8.3786]]],[[[112.4452,-8.4006],[112.4449,-8.4002],[112.4452,-8.4003],[112.4452,-8.4006]]],[[[112.4554,-8.3984],[112.4556,-8.3991],[112.4554,-8.399],[112.4554,-8.3984]]],[[[112.4464,-8.3984],[112.4463,-8.3974],[112.4468,-8.3978],[112.4464,-8.3984]]],[[[112.4818,-8.3968],[112.4819,-8.3962],[112.4821,-8.3963],[112.4818,-8.3968]]],[[[112.4492,-8.3965],[112.4493,-8.396],[112.4495,-8.3962],[112.4492,-8.3965]]],[[[112.4769,-8.3961],[112.4771,-8.3958],[112.4771,-8.3961],[112.4769,-8.3961]]],[[[112.463,-8.3958],[112.463,-8.3957],[112.463,-8.3958],[112.463,-8.3958]]]]}},{"type":"Feature","properties":{"name":"Kalipare","idx":24},"geometry":{"type":"Polygon","coordinates":[[[112.4657,-8.2595],[112.4657,-8.2675],[112.4555,-8.2712],[112.4309,-8.2677],[112.4321,-8.2601],[112.4163,-8.2588],[112.4161,-8.2429],[112.4029,-8.2411],[112.4049,-8.2348],[112.3872,-8.2375],[112.3892,-8.2152],[112.383,-8.2078],[112.3827,-8.1914],[112.3671,-8.1832],[112.3668,-8.1749],[112.3905,-8.162],[112.3958,-8.1648],[112.4116,-8.1602],[112.4155,-8.1664],[112.4177,-8.1595],[112.4343,-8.1565],[112.4584,-8.1689],[112.4644,-8.1794],[112.4865,-8.1863],[112.4939,-8.2382],[112.4869,-8.2714],[112.4772,-8.2746],[112.4726,-8.2717],[112.4742,-8.2582],[112.4657,-8.2595]]]}},{"type":"Feature","properties":{"name":"Bantur","idx":25},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.5212,-8.4052],[112.5216,-8.4058],[112.521,-8.4054],[112.5212,-8.4052]]],[[[112.5217,-8.4038],[112.5208,-8.4037],[112.5217,-8.4037],[112.5217,-8.4038]]],[[[112.4973,-8.4035],[112.4976,-8.4029],[112.4978,-8.4031],[112.4973,-8.4035]]],[[[112.4941,-8.4029],[112.4938,-8.4021],[112.4944,-8.4023],[112.4941,-8.4029]]],[[[112.5209,-8.4014],[112.5211,-8.4014],[112.521,-8.4015],[112.5209,-8.4014]]],[[[112.4847,-8.4002],[112.4853,-8.3995],[112.4848,-8.4003],[112.4847,-8.4002]]],[[[112.5212,-8.3999],[112.521,-8.3992],[112.5214,-8.3995],[112.5212,-8.3999]]],[[[112.5189,-8.399],[112.5192,-8.399],[112.519,-8.3991],[112.5189,-8.399]]],[[[112.5129,-8.3977],[112.5131,-8.3977],[112.5129,-8.3978],[112.5129,-8.3977]]],[[[112.5171,-8.3976],[112.5169,-8.3973],[112.5174,-8.397],[112.5171,-8.3976]]],[[[112.5184,-8.3974],[112.5187,-8.3972],[112.5187,-8.3974],[112.5184,-8.3974]]],[[[112.5092,-8.2943],[112.5321,-8.2988],[112.546,-8.2946],[112.5518,-8.2656],[112.5468,-8.2643],[112.5456,-8.2367],[112.5619,-8.2217],[112.5649,-8.2119],[112.5616,-8.2002],[112.6006,-8.2223],[112.6053,-8.2307],[112.6,-8.2418],[112.6089,-8.2584],[112.5963,-8.2601],[112.6059,-8.268],[112.6039,-8.2708],[112.6134,-8.2707],[112.6162,-8.282],[112.6155,-8.2874],[112.6062,-8.2903],[112.6009,-8.3056],[112.6059,-8.3061],[112.6081,-8.3144],[112.6009,-8.3141],[112.5996,-8.3229],[112.5841,-8.3289],[112.5719,-8.342],[112.574,-8.3581],[112.5645,-8.3706],[112.5689,-8.3829],[112.5613,-8.3977],[112.5479,-8.4054],[112.529,-8.402],[112.5224,-8.4047],[112.5223,-8.3981],[112.5163,-8.3955],[112.5098,-8.3955],[112.506,-8.4035],[112.5027,-8.4046],[112.4991,-8.4009],[112.487,-8.3998],[112.4817,-8.3923],[112.4924,-8.3738],[112.4898,-8.3666],[112.4986,-8.3531],[112.4976,-8.3411],[112.5069,-8.3379],[112.501,-8.3263],[112.5092,-8.2943]]],[[[112.5298,-8.4052],[112.5296,-8.405],[112.5298,-8.4049],[112.5298,-8.4052]]],[[[112.5301,-8.4042],[112.53,-8.4033],[112.5303,-8.4033],[112.5301,-8.4042]]],[[[112.5336,-8.4038],[112.5335,-8.4034],[112.5337,-8.4035],[112.5336,-8.4038]]]]}},{"type":"Feature","properties":{"name":"Gedangan","idx":26},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.6157,-8.4327],[112.6157,-8.4325],[112.6157,-8.4325],[112.6157,-8.4327]]],[[[112.5932,-8.4186],[112.5931,-8.4183],[112.5932,-8.4185],[112.5932,-8.4186]]],[[[112.5947,-8.4184],[112.5951,-8.4182],[112.5951,-8.4184],[112.5947,-8.4184]]],[[[112.5847,-8.4183],[112.5847,-8.4175],[112.585,-8.4176],[112.5847,-8.4183]]],[[[112.594,-8.4164],[112.5863,-8.4182],[112.5732,-8.4074],[112.553,-8.4016],[112.5613,-8.3977],[112.5689,-8.3829],[112.5645,-8.3706],[112.574,-8.3581],[112.5719,-8.342],[112.5841,-8.3289],[112.5996,-8.3229],[112.6009,-8.3141],[112.608,-8.3148],[112.6059,-8.3061],[112.6009,-8.3057],[112.6062,-8.2903],[112.6155,-8.2874],[112.6152,-8.2733],[112.6086,-8.2679],[112.6039,-8.2708],[112.6059,-8.268],[112.5963,-8.2601],[112.6088,-8.2588],[112.6,-8.2418],[112.6053,-8.2307],[112.6262,-8.2405],[112.6364,-8.2372],[112.6491,-8.2421],[112.6477,-8.2564],[112.652,-8.2652],[112.6661,-8.2676],[112.6562,-8.2945],[112.6712,-8.2949],[112.6693,-8.3001],[112.6633,-8.3001],[112.6698,-8.3057],[112.6619,-8.3171],[112.6674,-8.3208],[112.6683,-8.3666],[112.6575,-8.3793],[112.6585,-8.4009],[112.6484,-8.4104],[112.6439,-8.439],[112.6295,-8.4282],[112.6159,-8.4338],[112.6151,-8.4265],[112.6113,-8.4216],[112.594,-8.4164]]],[[[112.6228,-8.4419],[112.6226,-8.4416],[112.6229,-8.4417],[112.6228,-8.4419]]],[[[112.6212,-8.4409],[112.6209,-8.4403],[112.6212,-8.4401],[112.6212,-8.4409]]]]}},{"type":"Feature","properties":{"name":"Sumbermanjing","idx":27},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.6727,-8.4594],[112.6728,-8.4595],[112.6727,-8.4596],[112.6727,-8.4594]]],[[[112.6551,-8.4521],[112.6555,-8.4522],[112.655,-8.4524],[112.6551,-8.4521]]],[[[112.6495,-8.4515],[112.6496,-8.4516],[112.6495,-8.4517],[112.6495,-8.4515]]],[[[112.6416,-8.4511],[112.6419,-8.4509],[112.6418,-8.4512],[112.6416,-8.4511]]],[[[112.6524,-8.452],[112.6525,-8.4499],[112.6527,-8.4499],[112.6524,-8.452]]],[[[112.6723,-8.4495],[112.6727,-8.4496],[112.6725,-8.4497],[112.6723,-8.4495]]],[[[112.6493,-8.4496],[112.6497,-8.4492],[112.6497,-8.4497],[112.6493,-8.4496]]],[[[112.6547,-8.4489],[112.6539,-8.4484],[112.6543,-8.448],[112.6547,-8.4489]]],[[[112.637,-8.4484],[112.6373,-8.4483],[112.6371,-8.4486],[112.637,-8.4484]]],[[[112.6372,-8.4475],[112.6373,-8.4477],[112.6372,-8.4478],[112.6372,-8.4475]]],[[[112.656,-8.447],[112.6561,-8.4469],[112.6561,-8.447],[112.656,-8.447]]],[[[112.6594,-8.4473],[112.6593,-8.4467],[112.6597,-8.4466],[112.6594,-8.4473]]],[[[112.6465,-8.4462],[112.6469,-8.4461],[112.6468,-8.4464],[112.6465,-8.4462]]],[[[112.6709,-8.4458],[112.6703,-8.446],[112.6706,-8.4454],[112.6709,-8.4458]]],[[[112.6475,-8.4456],[112.6478,-8.4454],[112.6478,-8.4456],[112.6475,-8.4456]]],[[[112.6694,-8.4455],[112.6681,-8.4459],[112.6691,-8.4447],[112.6694,-8.4455]]],[[[112.6645,-8.4455],[112.6644,-8.4443],[112.6648,-8.4454],[112.6645,-8.4455]]],[[[112.6449,-8.4443],[112.6449,-8.4444],[112.6448,-8.4444],[112.6449,-8.4443]]],[[[112.642,-8.4435],[112.6413,-8.4429],[112.6423,-8.4423],[112.642,-8.4435]]],[[[112.6671,-8.4426],[112.6672,-8.4428],[112.667,-8.4427],[112.6671,-8.4426]]],[[[112.6681,-8.4426],[112.6684,-8.4424],[112.6683,-8.4428],[112.6681,-8.4426]]],[[[112.6412,-8.4408],[112.6405,-8.4404],[112.641,-8.4402],[112.6412,-8.4408]]],[[[112.6698,-8.3058],[112.6632,-8.3006],[112.6693,-8.3001],[112.6709,-8.2944],[112.6562,-8.2945],[112.6661,-8.2676],[112.652,-8.2652],[112.6477,-8.2564],[112.6493,-8.2423],[112.6401,-8.2377],[112.6444,-8.232],[112.6509,-8.2361],[112.6648,-8.2331],[112.6673,-8.2368],[112.6766,-8.2356],[112.6769,-8.2317],[112.6809,-8.2341],[112.6863,-8.228],[112.7028,-8.2262],[112.7122,-8.2309],[112.7175,-8.2404],[112.7244,-8.2385],[112.7244,-8.2432],[112.7343,-8.2478],[112.7427,-8.2485],[112.7462,-8.2429],[112.7492,-8.2558],[112.768,-8.2637],[112.7689,-8.2698],[112.7676,-8.2797],[112.7606,-8.279],[112.7567,-8.3259],[112.7794,-8.3286],[112.7797,-8.3379],[112.7999,-8.3348],[112.8085,-8.3981],[112.8041,-8.3953],[112.7991,-8.4048],[112.793,-8.4024],[112.7926,-8.4032],[112.7832,-8.3973],[112.7834,-8.3868],[112.7702,-8.3869],[112.7662,-8.3932],[112.7665,-8.4112],[112.7643,-8.4077],[112.7545,-8.4111],[112.7555,-8.4215],[112.7502,-8.4146],[112.7445,-8.4176],[112.7427,-8.4248],[112.7394,-8.4158],[112.7155,-8.4206],[112.7087,-8.4175],[112.7005,-8.4259],[112.6908,-8.4264],[112.6716,-8.4451],[112.6677,-8.4407],[112.6484,-8.4473],[112.6486,-8.4452],[112.6418,-8.4397],[112.648,-8.4275],[112.6452,-8.4219],[112.6498,-8.42],[112.6484,-8.4104],[112.6585,-8.4009],[112.6575,-8.3793],[112.6683,-8.3666],[112.6674,-8.3208],[112.6619,-8.3171],[112.6698,-8.3058]]],[[[112.6916,-8.461],[112.6919,-8.4607],[112.6918,-8.4611],[112.6916,-8.461]]],[[[112.6959,-8.4605],[112.6967,-8.4605],[112.6965,-8.4615],[112.6959,-8.4605]]],[[[112.6915,-8.4601],[112.6918,-8.4603],[112.6915,-8.4604],[112.6915,-8.4601]]],[[[112.6947,-8.4591],[112.6953,-8.4589],[112.6953,-8.4593],[112.6947,-8.4591]]],[[[112.6925,-8.4592],[112.6927,-8.4583],[112.693,-8.4593],[112.6925,-8.4592]]],[[[112.6769,-8.4585],[112.6773,-8.4586],[112.677,-8.4588],[112.6769,-8.4585]]],[[[112.6778,-8.4581],[112.6778,-8.4575],[112.678,-8.4575],[112.6778,-8.4581]]],[[[112.6807,-8.4573],[112.6812,-8.4573],[112.6807,-8.4575],[112.6807,-8.4573]]],[[[112.6799,-8.4568],[112.6795,-8.4562],[112.6799,-8.4562],[112.6799,-8.4568]]],[[[112.679,-8.4557],[112.6793,-8.4553],[112.6793,-8.4557],[112.679,-8.4557]]],[[[112.682,-8.4556],[112.6815,-8.4556],[112.682,-8.4552],[112.682,-8.4556]]],[[[112.6762,-8.455],[112.6765,-8.455],[112.6762,-8.4551],[112.6762,-8.455]]],[[[112.6784,-8.4548],[112.6787,-8.455],[112.6785,-8.455],[112.6784,-8.4548]]],[[[112.6774,-8.4545],[112.6772,-8.4532],[112.6778,-8.4528],[112.6774,-8.4545]]],[[[112.6788,-8.4538],[112.6785,-8.4536],[112.6786,-8.4536],[112.6788,-8.4538]]],[[[112.6775,-8.4522],[112.6777,-8.4513],[112.678,-8.4514],[112.6775,-8.4522]]],[[[112.6787,-8.4517],[112.679,-8.4512],[112.6791,-8.4515],[112.6787,-8.4517]]],[[[112.6774,-8.447],[112.6778,-8.4467],[112.6779,-8.447],[112.6774,-8.447]]],[[[112.6918,-8.4311],[112.7124,-8.4343],[112.7123,-8.4585],[112.7037,-8.4639],[112.6954,-8.458],[112.6915,-8.4579],[112.692,-8.4562],[112.6885,-8.458],[112.6888,-8.451],[112.6805,-8.4521],[112.6802,-8.456],[112.6801,-8.4412],[112.6918,-8.4311]]],[[[112.7056,-8.4637],[112.7062,-8.4637],[112.7055,-8.4639],[112.7056,-8.4637]]],[[[112.7046,-8.4637],[112.7048,-8.4633],[112.7046,-8.4638],[112.7046,-8.4637]]],[[[112.7009,-8.462],[112.7012,-8.4632],[112.7003,-8.4626],[112.7009,-8.462]]],[[[112.6987,-8.4612],[112.6986,-8.4629],[112.6979,-8.4627],[112.6987,-8.4612]]],[[[112.7355,-8.4328],[112.7336,-8.4338],[112.7353,-8.4326],[112.7355,-8.4328]]],[[[112.7337,-8.4269],[112.7341,-8.4269],[112.734,-8.4271],[112.7337,-8.4269]]],[[[112.7547,-8.4238],[112.7538,-8.4234],[112.7548,-8.4223],[112.7547,-8.4238]]],[[[112.7388,-8.4181],[112.7393,-8.4178],[112.7393,-8.4183],[112.7388,-8.4181]]],[[[112.7459,-8.4177],[112.7463,-8.4176],[112.7461,-8.418],[112.7459,-8.4177]]],[[[112.7507,-8.4171],[112.7507,-8.4174],[112.7506,-8.4171],[112.7507,-8.4171]]],[[[112.7486,-8.4159],[112.7488,-8.4162],[112.7486,-8.4163],[112.7486,-8.4159]]],[[[112.7983,-8.4124],[112.7978,-8.4133],[112.7962,-8.4134],[112.7983,-8.4124]]],[[[112.7977,-8.4093],[112.7993,-8.411],[112.7952,-8.4075],[112.7977,-8.4093]]],[[[112.7985,-8.4082],[112.7989,-8.4085],[112.7985,-8.4085],[112.7985,-8.4082]]],[[[112.7935,-8.4046],[112.794,-8.4034],[112.794,-8.4051],[112.7935,-8.4046]]]]}},{"type":"Feature","properties":{"name":"Dampit","idx":28},"geometry":{"type":"Polygon","coordinates":[[[112.7417,-8.2475],[112.7265,-8.2444],[112.7244,-8.2385],[112.7175,-8.2404],[112.7122,-8.2309],[112.6956,-8.226],[112.6997,-8.2232],[112.6994,-8.21],[112.7082,-8.2007],[112.7043,-8.1943],[112.7106,-8.1808],[112.7328,-8.1566],[112.7572,-8.1532],[112.7614,-8.1613],[112.7769,-8.1636],[112.7764,-8.1679],[112.787,-8.1651],[112.7968,-8.1685],[112.8005,-8.173],[112.7926,-8.1763],[112.7888,-8.185],[112.7955,-8.1907],[112.8015,-8.187],[112.8024,-8.2012],[112.7922,-8.2206],[112.7892,-8.218],[112.7842,-8.2246],[112.8036,-8.2284],[112.8062,-8.2594],[112.8133,-8.276],[112.8087,-8.2859],[112.8141,-8.2941],[112.8131,-8.3052],[112.8346,-8.3063],[112.842,-8.3112],[112.8408,-8.3329],[112.821,-8.3332],[112.8135,-8.3383],[112.8101,-8.3316],[112.797,-8.3376],[112.7797,-8.3379],[112.7794,-8.3286],[112.7569,-8.3262],[112.7606,-8.279],[112.7695,-8.2761],[112.768,-8.2637],[112.7492,-8.2558],[112.7462,-8.2429],[112.7417,-8.2475]]]}},{"type":"Feature","properties":{"name":"Ampelgading","idx":29},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.8856,-8.2859],[112.8726,-8.2826],[112.869,-8.2765],[112.8468,-8.2732],[112.851,-8.2437],[112.8468,-8.2358],[112.8511,-8.2226],[112.8381,-8.2213],[112.8472,-8.2058],[112.8504,-8.1825],[112.8579,-8.1789],[112.863,-8.139],[112.8513,-8.1406],[112.855,-8.1304],[112.8472,-8.1302],[112.8567,-8.1133],[112.8661,-8.1078],[112.8742,-8.1119],[112.9235,-8.108],[112.9266,-8.1148],[112.9204,-8.1217],[112.9202,-8.1397],[112.9042,-8.1922],[112.9227,-8.2397],[112.9126,-8.2648],[112.9138,-8.2816],[112.9264,-8.3041],[112.941,-8.3152],[112.9363,-8.3233],[112.9375,-8.3349],[112.948,-8.345],[112.9459,-8.3503],[112.9491,-8.3559],[112.9466,-8.3602],[112.948,-8.3636],[112.9397,-8.3722],[112.9433,-8.3744],[112.9378,-8.3816],[112.9264,-8.3788],[112.9215,-8.3563],[112.8865,-8.3373],[112.8786,-8.3247],[112.8783,-8.3066],[112.8847,-8.2975],[112.8856,-8.2859]]],[[[112.9327,-8.3822],[112.9317,-8.3832],[112.9318,-8.3826],[112.9327,-8.3822]]],[[[112.9469,-8.3665],[112.946,-8.3662],[112.9466,-8.3658],[112.9469,-8.3665]]],[[[112.9473,-8.3657],[112.9477,-8.3658],[112.9476,-8.366],[112.9473,-8.3657]]],[[[112.9478,-8.3628],[112.9481,-8.3628],[112.9479,-8.363],[112.9478,-8.3628]]],[[[112.9499,-8.3608],[112.9499,-8.3607],[112.95,-8.3608],[112.9499,-8.3608]]]]}},{"type":"Feature","properties":{"name":"Tirtoyudo","idx":30},"geometry":{"type":"MultiPolygon","coordinates":[[[[112.8106,-8.4025],[112.81,-8.402],[112.8105,-8.4019],[112.8106,-8.4025]]],[[[112.8125,-8.4018],[112.8126,-8.4017],[112.8126,-8.4018],[112.8125,-8.4018]]],[[[112.816,-8.4005],[112.816,-8.4001],[112.8162,-8.4005],[112.816,-8.4005]]],[[[112.8094,-8.4001],[112.8097,-8.4001],[112.8093,-8.4004],[112.8094,-8.4001]]],[[[112.818,-8.3959],[112.8178,-8.3952],[112.8182,-8.396],[112.818,-8.3959]]],[[[112.8253,-8.3734],[112.8252,-8.373],[112.8257,-8.3729],[112.8253,-8.3734]]],[[[112.8265,-8.3731],[112.8266,-8.3728],[112.8268,-8.3728],[112.8265,-8.3731]]],[[[112.8467,-8.273],[112.8847,-8.2843],[112.8847,-8.2975],[112.8781,-8.3077],[112.8786,-8.3247],[112.8865,-8.3373],[112.9215,-8.3563],[112.9238,-8.3748],[112.9322,-8.3882],[112.9289,-8.385],[112.929,-8.3903],[112.9262,-8.3882],[112.9224,-8.3888],[112.9112,-8.3991],[112.9114,-8.3926],[112.9055,-8.3931],[112.9077,-8.3834],[112.8986,-8.3807],[112.8927,-8.3889],[112.8983,-8.4021],[112.8851,-8.4022],[112.8717,-8.4085],[112.8632,-8.3942],[112.8583,-8.402],[112.8542,-8.3998],[112.8475,-8.4054],[112.8438,-8.4004],[112.8515,-8.3914],[112.8461,-8.3879],[112.8482,-8.3776],[112.8446,-8.3765],[112.8394,-8.3858],[112.8388,-8.3723],[112.8333,-8.3686],[112.8201,-8.373],[112.8155,-8.3868],[112.8191,-8.3919],[112.8126,-8.4014],[112.8085,-8.3981],[112.7999,-8.3348],[112.8107,-8.3317],[112.8138,-8.3383],[112.821,-8.3332],[112.8403,-8.3332],[112.8425,-8.3152],[112.8346,-8.3063],[112.8131,-8.3052],[112.8141,-8.2941],[112.8087,-8.2859],[112.8133,-8.276],[112.8062,-8.2594],[112.8036,-8.2284],[112.7842,-8.2246],[112.7892,-8.218],[112.7922,-8.2206],[112.8024,-8.2012],[112.8015,-8.187],[112.7955,-8.1907],[112.7888,-8.185],[112.7926,-8.1763],[112.8005,-8.173],[112.795,-8.1702],[112.8005,-8.1619],[112.8378,-8.1426],[112.8437,-8.1328],[112.8529,-8.1296],[112.8506,-8.1401],[112.863,-8.1388],[112.8589,-8.1737],[112.8504,-8.1825],[112.8472,-8.2058],[112.8381,-8.2213],[112.8511,-8.2226],[112.8468,-8.2358],[112.851,-8.2437],[112.8467,-8.273]]],[[[112.8484,-8.4067],[112.8477,-8.4069],[112.848,-8.4063],[112.8484,-8.4067]]],[[[112.9263,-8.3906],[112.9265,-8.3891],[112.9269,-8.3906],[112.9263,-8.3906]]],[[[112.8362,-8.3841],[112.8361,-8.3832],[112.8364,-8.383],[112.8362,-8.3841]]],[[[112.8383,-8.3831],[112.8386,-8.383],[112.8383,-8.3835],[112.8383,-8.3831]]],[[[112.8365,-8.3829],[112.8366,-8.3826],[112.8366,-8.3829],[112.8365,-8.3829]]],[[[112.8373,-8.3827],[112.8374,-8.3823],[112.8374,-8.3827],[112.8373,-8.3827]]],[[[112.8378,-8.3826],[112.8376,-8.3819],[112.8379,-8.3821],[112.8378,-8.3826]]],[[[112.8371,-8.3748],[112.8364,-8.3753],[112.8369,-8.3744],[112.8371,-8.3748]]]]}},{"type":"Feature","properties":{"name":"Jabung","idx":31},"geometry":{"type":"Polygon","coordinates":[[[112.7584,-7.9764],[112.7494,-7.9791],[112.7431,-7.9737],[112.7511,-7.9695],[112.7449,-7.9603],[112.7366,-7.9596],[112.7386,-7.9546],[112.727,-7.9449],[112.725,-7.9364],[112.7337,-7.922],[112.7325,-7.916],[112.7237,-7.9187],[112.7273,-7.9212],[112.7215,-7.9286],[112.717,-7.9173],[112.7236,-7.906],[112.7376,-7.9096],[112.7519,-7.9071],[112.7578,-7.8987],[112.7611,-7.8759],[112.7749,-7.8702],[112.7807,-7.874],[112.7772,-7.8793],[112.7837,-7.9003],[112.8055,-7.9255],[112.8216,-7.9281],[112.828,-7.9357],[112.8405,-7.9387],[112.8532,-7.9337],[112.8565,-7.9397],[112.8741,-7.9455],[112.8553,-7.9789],[112.8157,-7.9991],[112.7609,-7.9878],[112.7584,-7.9764]]]}},{"type":"Feature","properties":{"name":"Pagelaran","idx":32},"geometry":{"type":"Polygon","coordinates":[[[112.65,-8.2036],[112.6363,-8.2401],[112.6108,-8.2341],[112.6004,-8.2221],[112.5632,-8.1997],[112.5521,-8.1828],[112.5818,-8.1706],[112.5891,-8.1543],[112.5941,-8.1558],[112.6122,-8.1663],[112.6118,-8.1762],[112.6368,-8.187],[112.626,-8.1966],[112.6426,-8.2048],[112.65,-8.2036]]]}}]};
+
+const LAYER_DATA = {
+  umkm: {
+    label:'Jumlah UMKM (Unit)', unit:'unit', icon:'🏪',
+    values:[{v:3240},{v:5820},{v:4150},{v:2680},{v:2140},{v:1980},{v:1760},{v:2420},{v:2840},{v:2060},
+            {v:1920},{v:1840},{v:1580},{v:1460},{v:2380},{v:3140},{v:2760},{v:1240},{v:980},{v:1380},
+            {v:1180},{v:1060},{v:1320},{v:1140},{v:1020},{v:960},{v:1480},{v:1840},{v:2180},{v:1620},
+            {v:1560},{v:1280},{v:2640}],
+    colorHigh:'#1976D2', colorLow:'#0D2A4A'
+  },
+  pbb: {
+    label:'Realisasi PBB-P2 (Juta Rp)', unit:'Jt Rp', icon:'🏛️',
+    values:[{v:4820},{v:8640},{v:6210},{v:3840},{v:2980},{v:2640},{v:2180},{v:3120},{v:3680},{v:2840},
+            {v:2560},{v:2320},{v:2080},{v:1860},{v:3240},{v:4960},{v:3580},{v:1480},{v:1120},{v:1820},
+            {v:1640},{v:1420},{v:1680},{v:1380},{v:1240},{v:1120},{v:1960},{v:2480},{v:3040},{v:2280},
+            {v:2140},{v:1780},{v:3860}],
+    colorHigh:'#F9A825', colorLow:'#1A1000'
+  },
+  kemiskinan: {
+    label:'Tingkat Kemiskinan (%)', unit:'%', icon:'👥',
+    values:[{v:7.2},{v:5.8},{v:8.4},{v:10.1},{v:9.3},{v:11.2},{v:12.8},{v:10.4},{v:8.9},{v:11.6},
+            {v:9.8},{v:12.4},{v:8.6},{v:13.2},{v:9.1},{v:6.4},{v:8.2},{v:14.8},{v:15.2},{v:16.7},
+            {v:12.1},{v:13.8},{v:14.2},{v:15.8},{v:16.4},{v:17.1},{v:13.4},{v:11.8},{v:10.6},{v:9.4},
+            {v:14.6},{v:13.9},{v:8.8}],
+    colorHigh:'#E53935', colorLow:'#1A0808', invert:true
+  },
+  padi: {
+    label:'Produksi Padi (Ribu Ton)', unit:'rb ton', icon:'🌾',
+    values:[{v:18.4},{v:12.1},{v:22.8},{v:19.6},{v:25.4},{v:21.2},{v:17.8},{v:24.6},{v:28.4},{v:26.2},
+            {v:22.6},{v:20.4},{v:23.8},{v:24.2},{v:19.4},{v:14.8},{v:18.6},{v:28.4},{v:26.8},{v:22.4},
+            {v:30.2},{v:28.6},{v:32.4},{v:24.8},{v:22.6},{v:20.8},{v:34.2},{v:28.4},{v:26.6},{v:21.8},
+            {v:18.4},{v:22.6},{v:16.2}],
+    colorHigh:'#2E7D32', colorLow:'#0A1A0E'
+  },
+  perikanan: {
+    label:'Prod. Perikanan (Ton)', unit:'ton', icon:'🐟',
+    values:[{v:280},{v:120},{v:350},{v:180},{v:420},{v:310},{v:540},{v:680},{v:1240},{v:860},
+            {v:420},{v:380},{v:290},{v:210},{v:180},{v:110},{v:140},{v:90},{v:80},{v:70},
+            {v:320},{v:280},{v:260},{v:310},{v:290},{v:340},{v:980},{v:1420},{v:1850},{v:1620},
+            {v:2100},{v:1780},{v:160}],
+    colorHigh:'#00897B', colorLow:'#051A18'
+  },
+  peternakan: {
+    label:'Prod. Daging (Ton)', unit:'ton', icon:'🐄',
+    values:[{v:1840},{v:980},{v:2240},{v:1680},{v:2100},{v:1560},{v:1320},{v:1840},{v:2180},{v:1640},
+            {v:1920},{v:1420},{v:1680},{v:1280},{v:1840},{v:2420},{v:2080},{v:3840},{v:4200},{v:2840},
+            {v:1480},{v:1320},{v:1240},{v:1080},{v:960},{v:880},{v:1140},{v:1320},{v:1480},{v:1640},
+            {v:1180},{v:1040},{v:1760}],
+    colorHigh:'#F9A825', colorLow:'#1A1000'
+  },
+  investasi: {
+    label:'Realisasi Investasi (Miliar Rp)', unit:'M', icon:'💼',
+    values:[{v:842},{v:2840},{v:1240},{v:680},{v:1820},{v:560},{v:380},{v:420},{v:640},{v:480},
+            {v:560},{v:340},{v:620},{v:280},{v:720},{v:1840},{v:1120},{v:220},{v:180},{v:140},
+            {v:380},{v:260},{v:240},{v:180},{v:160},{v:140},{v:320},{v:420},{v:480},{v:520},
+            {v:280},{v:240},{v:680}],
+    colorHigh:'#7B1FA2', colorLow:'#120818'
+  },
+  pariwisata: {
+    label:'Kunjungan Wisatawan (Ribu)', unit:'rb', icon:'🏖️',
+    values:[{v:82},{v:284},{v:148},{v:96},{v:162},{v:428},{v:384},{v:210},{v:96},{v:72},
+            {v:64},{v:58},{v:42},{v:38},{v:84},{v:320},{v:148},{v:564},{v:820},{v:140},
+            {v:52},{v:46},{v:38},{v:62},{v:72},{v:58},{v:420},{v:380},{v:840},{v:480},
+            {v:280},{v:640},{v:96}],
+    colorHigh:'#CE93D8', colorLow:'#150818'
+  },
+  tpt: {
+    label:'Tingkat Pengangguran (%)', unit:'%', icon:'🎯',
+    values:[{v:3.8},{v:5.2},{v:4.1},{v:4.6},{v:4.2},{v:5.1},{v:5.4},{v:4.8},{v:4.4},{v:5.0},
+            {v:4.6},{v:5.2},{v:4.4},{v:5.6},{v:4.2},{v:3.6},{v:4.0},{v:6.2},{v:6.4},{v:7.1},
+            {v:5.4},{v:5.8},{v:6.0},{v:6.4},{v:6.6},{v:6.8},{v:5.6},{v:5.2},{v:4.8},{v:4.4},
+            {v:6.0},{v:5.8},{v:4.2}],
+    colorHigh:'#E53935', colorLow:'#1A0808', invert:true
+  }
+};
+
+// ================================================================
+// PETA SPASIAL — Leaflet Engine
+// ================================================================
+let petaActiveLayer = 'umkm';
+let leafletMap = null;
+let geojsonLayer = null;
+let legendControl = null;
+
+function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return{r,g,b};}
+function lerpColor(c1hex,c2hex,t){const c1=hexToRgb(c1hex),c2=hexToRgb(c2hex);return `rgb(${Math.round(c1.r+(c2.r-c1.r)*t)},${Math.round(c1.g+(c2.g-c1.g)*t)},${Math.round(c1.b+(c2.b-c1.b)*t)})`;}
+
+function initLeaflet(){
+  if(leafletMap) return;
+  leafletMap = L.map('leafletMap', {
+    center: [-8.15, 112.52],
+    zoom: 10,
+    zoomControl: true,
+    attributionControl: true
+  });
+
+  // Tile layer OpenStreetMap dengan filter dark
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 18
+  }).addTo(leafletMap);
+
+  // Legend control
+  legendControl = L.control({position:'bottomleft'});
+  legendControl.onAdd = function(){
+    const div = L.DomUtil.create('div','leaflet-peta-legend');
+    div.id = 'petaLegend';
+    div.innerHTML = '<h4>Legenda</h4>';
+    return div;
+  };
+  legendControl.addTo(leafletMap);
+
+  drawPeta();
+}
+
+function drawPeta(){
+  if(!leafletMap){ initLeaflet(); return; }
+
+  const layer = LAYER_DATA[petaActiveLayer];
+  const vals  = layer.values.map(d=>d.v);
+  const minV  = Math.min(...vals), maxV = Math.max(...vals);
+
+  // Remove old geojson layer
+  if(geojsonLayer){ geojsonLayer.remove(); geojsonLayer=null; }
+
+  // Style function
+  function getStyle(feature){
+    const idx = feature.properties.idx;
+    const v   = vals[idx];
+    const t   = maxV===minV ? 0.5 : (v-minV)/(maxV-minV);
+    const tN  = layer.invert ? (1-t) : t;
+    const fill = lerpColor(layer.colorLow||'#0D2A4A', layer.colorHigh, tN);
+    return {
+      fillColor: fill,
+      fillOpacity: 0.82,
+      color: 'rgba(255,255,255,0.35)',
+      weight: 1
+    };
+  }
+
+  // Create GeoJSON layer
+  geojsonLayer = L.geoJSON(KEC_GEOJSON, {
+    style: getStyle,
+    onEachFeature: function(feature, lyr){
+      const idx = feature.properties.idx;
+      const name = feature.properties.name;
+      const v   = vals[idx];
+      const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+      const diff= (v-avg).toFixed(1);
+      const isGood = layer.invert ? v<avg : v>avg;
+
+      lyr.bindTooltip(`
+        <div style="font-size:12px;font-weight:800;color:#fff;margin-bottom:5px">📍 ${name}</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">${v} ${layer.unit}</div>
+        <div style="font-size:11px;color:${isGood?'#66BB6A':'#EF9A9A'}">${isGood?'▲':'▼'} ${Math.abs(diff)} ${layer.unit} dari rata-rata</div>
+        <div style="font-size:10px;color:#7A8FA6;margin-top:3px">Rata-rata: ${avg.toFixed(1)} ${layer.unit}</div>
+      `, {
+        className:'peta-tooltip',
+        sticky: true,
+        direction:'top',
+        offset:[0,-4]
+      });
+
+      lyr.on({
+        mouseover: function(e){
+          e.target.setStyle({weight:2.5, color:'rgba(249,168,37,0.9)', fillOpacity:0.95});
+          e.target.bringToFront();
+        },
+        mouseout: function(e){ geojsonLayer.resetStyle(e.target); },
+        click: function(){ highlightKec(idx); }
+      });
+    }
+  }).addTo(leafletMap);
+
+  // Fit bounds to Kabupaten Malang
+  leafletMap.fitBounds(geojsonLayer.getBounds(), {padding:[20,20]});
+
+  // Update legenda
+  const leg = document.getElementById('petaLegend');
+  if(leg){
+    const steps=5; let lHtml='<h4>Legenda</h4>';
+    for(let i=steps;i>=0;i--){
+      const t=i/steps, tN=layer.invert?(1-t):t;
+      const c=lerpColor(layer.colorLow||'#0D2A4A',layer.colorHigh,tN);
+      const v=(minV+(maxV-minV)*t).toFixed(1);
+      lHtml+=`<div class="leg-item"><div class="leg-box" style="background:${c}"></div><span class="leg-lbl">${v} ${layer.unit}</span></div>`;
+    }
+    leg.innerHTML=lHtml;
+  }
+
+  // Update stats
+  const maxIdx=vals.indexOf(Math.max(...vals));
+  const minIdx=vals.indexOf(Math.min(...vals));
+  const avg=(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+  const kNames = KEC_GEOJSON.features.map(f=>f.properties.name);
+  const elMax=document.getElementById('petaStatMax');
+  const elMin=document.getElementById('petaStatMin');
+  const elAvg=document.getElementById('petaStatAvg');
+  if(elMax) elMax.textContent=kNames[maxIdx]+' ('+vals[maxIdx]+' '+layer.unit+')';
+  if(elMin) elMin.textContent=kNames[minIdx]+' ('+vals[minIdx]+' '+layer.unit+')';
+  if(elAvg) elAvg.textContent=avg+' '+layer.unit;
+
+  // Ranking
+  const ranked=[...vals.map((v,i)=>({v,i}))].sort((a,b)=>layer.invert?a.v-b.v:b.v-a.v);
+  const rDiv=document.getElementById('petaRanking');
+  if(rDiv) rDiv.innerHTML=ranked.slice(0,10).map((r,rank)=>{
+    const t2=(r.v-minV)/(maxV-minV||1);
+    const tN2=layer.invert?(1-t2):t2;
+    const c2=lerpColor(layer.colorLow||'#0D2A4A',layer.colorHigh,tN2);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="highlightKec(${r.i})">
+      <span style="font-size:9px;font-weight:700;color:var(--dim);width:16px;text-align:right">#${rank+1}</span>
+      <div style="width:10px;height:10px;border-radius:2px;background:${c2};flex-shrink:0"></div>
+      <span style="font-size:11px;font-weight:600;color:var(--text);flex:1">${kNames[r.i]}</span>
+      <span style="font-size:10.5px;font-weight:700;color:${c2}">${r.v} ${layer.unit}</span>
+    </div>`;
+  }).join('');
+
+  // Zona cards
+  const sortedAll=[...vals.map((v,i)=>({v,i}))].sort((a,b)=>layer.invert?a.v-b.v:b.v-a.v);
+  const third=Math.floor(sortedAll.length/3);
+  const hijau=sortedAll.slice(0,third);
+  const kuning=sortedAll.slice(third,third*2);
+  const merah=sortedAll.slice(third*2);
+  const zHtml=(arr,bgC,textC)=>arr.map(r=>`<span class="zona-tag" style="background:${bgC};color:${textC};cursor:pointer" onclick="highlightKec(${r.i})">${kNames[r.i]}</span>`).join('');
+  const zh=document.getElementById('petaZonaHijau'),zk=document.getElementById('petaZonaKuning'),zm=document.getElementById('petaZonaMerah');
+  if(zh) zh.innerHTML=zHtml(hijau,'rgba(46,125,50,.2)','#66BB6A');
+  if(zk) zk.innerHTML=zHtml(kuning,'rgba(249,168,37,.15)','#F9A825');
+  if(zm) zm.innerHTML=zHtml(merah,'rgba(229,57,53,.15)','#EF9A9A');
+
+  // Badge
+  const lb=document.getElementById('peta-layer-badge');
+  if(lb) lb.textContent='Layer: '+layer.label;
+}
+
+function highlightKec(idx){
+  if(!geojsonLayer) return;
+  geojsonLayer.eachLayer(function(lyr){
+    const f = lyr.feature;
+    if(f.properties.idx === idx){
+      lyr.setStyle({weight:3, color:'#F9A825', fillOpacity:0.98});
+      lyr.bringToFront();
+      if(leafletMap) leafletMap.fitBounds(lyr.getBounds(), {padding:[60,60], maxZoom:12});
+    } else {
+      geojsonLayer.resetStyle(lyr);
+    }
+  });
+}
+
+function setLayer(layer, btn){
+  petaActiveLayer=layer;
+  document.querySelectorAll('.peta-layer-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  drawPeta();
+}
+
+function showPeta(){
+  setTimeout(()=>{
+    const el=document.getElementById('peta-spasial');
+    if(el) el.scrollIntoView({behavior:'smooth'});
+    // Init atau refresh peta
+    if(!leafletMap){ initLeaflet(); }
+    else { setTimeout(()=>{ leafletMap.invalidateSize(); drawPeta(); },300); }
+  },150);
+}
+
+// Inisialisasi Leaflet setelah DOM siap
+document.addEventListener('DOMContentLoaded',()=>{
+  // Delay sedikit agar elemen sudah terrender
+  setTimeout(()=>{
+    if(document.getElementById('leafletMap')) initLeaflet();
+  }, 400);
+});
+
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg||'✅ Berhasil!';
+  t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),3000);
+}
+
+// ================================================================
+// NAV SCROLL
+// ================================================================
+window.addEventListener('scroll',()=>{
+  const ids=['top','pdrb','inflasi','kemiskinan','investasi','pariwisata','sda','ntp','ekspor','rpjmd','peta-spasial'];
+  let cur='';
+  ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<=130)cur=id;});
+  document.querySelectorAll('.nav-a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
+});
+
+// ================================================================
+// EXPORT PDF
+// ================================================================
+function exportPDF() {
+  // Set print date
+  const d = new Date();
+  const el = document.getElementById('printDate');
+  if(el) el.textContent = d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  toast('🖨️ Membuka dialog print/save PDF…');
+  setTimeout(()=>window.print(), 400);
+}
+
+// ================================================================
+// ================================================================
+// INIT
+// ================================================================
+(function(){
+  // Restore tools panel state
+  try {
+    const panelOpen = localStorage.getItem('tools_panel_open');
+    if(panelOpen === 'true') {
+      document.getElementById('toolsPanel').classList.add('open');
+      document.getElementById('toolsArrow').classList.add('up');
+    }
+  } catch(e){}
+
+  // Muat data tersimpan dari localStorage
+  const savedAt = loadData();
+
+  buildAll();
+
+  // Tampilkan tanggal cetak
+  const el = document.getElementById('printDate');
+  if(el){ const d=new Date(); el.textContent=d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); }
+
+  // Beritahu user jika ada data tersimpan
+  if(savedAt) {
+    const tgl = new Date(savedAt).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    setTimeout(()=>toast('💾 Data tersimpan dimuat — '+tgl), 600);
+    // Update storage indicator
+    const st = document.getElementById('storageStatus');
+    const tm = document.getElementById('storageTime');
+    if(st && tm) {
+      st.style.display = 'block';
+      const d = new Date(savedAt);
+      tm.textContent = 'Tersimpan ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    }
+  }
+})();
+
+// ================================================================
+// EDIT DATA LAYER PETA
+// ================================================================
+let petaEditLayer = 'umkm';
+
+// Urutan kecamatan sesuai idx
+const KEC_NAMES = [
+  'Kepanjen','Singosari','Lawang','Pakis','Tumpang','Poncokusumo','Wajak','Turen',
+  'Gondanglegi','Bululawang','Tajinan','Pakisaji','Ngajum','Wagir','Dau','Karangploso',
+  'Pujon','Ngantang','Kasembon','Sumberpucung','Kromengan','Wonosari','Pagak','Donomulyo',
+  'Kalipare','Bantur','Gedangan','Sumbermanjing','Dampit','Ampelgading','Tirtoyudo',
+  'Jabung','Pagelaran'
+];
+
+// Simpan nilai original untuk reset
+const LAYER_DATA_ORIGINAL = JSON.parse(JSON.stringify(
+  Object.fromEntries(Object.entries(LAYER_DATA).map(([k,v])=>[k, v.values.map(x=>x.v)]))
+));
+
+function openPetaEdit() {
+  // Sync ke layer yang sedang aktif di peta
+  petaEditLayer = petaActiveLayer;
+  document.getElementById('petaEditModal').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  renderPetaEditTable(petaEditLayer);
+  // Highlight correct button
+  document.querySelectorAll('#petaEditModal .peta-layer-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('pe-btn-'+petaEditLayer);
+  if(btn) btn.classList.add('active');
+}
+
+function closePetaEdit() {
+  document.getElementById('petaEditModal').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
+function switchPetaEditLayer(key, btn) {
+  petaEditLayer = key;
+  document.querySelectorAll('#petaEditModal .peta-layer-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderPetaEditTable(key);
+}
+
+function renderPetaEditTable(key) {
+  const layer = LAYER_DATA[key];
+  const vals = layer.values;
+  document.getElementById('petaEditTitle').textContent = '✏️ Edit Data Layer: ' + layer.label;
+  document.getElementById('petaEditSub').textContent = layer.label + ' — ' + vals.length + ' kecamatan | Satuan: ' + layer.unit;
+
+  // Sort by value desc for reference
+  const sorted = vals.map((v,i)=>({v:v.v,i})).sort((a,b)=>b.v-a.v);
+  const maxV = sorted[0].v, minV = sorted[sorted.length-1].v, avg = vals.reduce((s,x)=>s+x.v,0)/vals.length;
+
+  let html = `
+  <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px">
+      <span style="color:var(--dim)">Min:</span> <strong style="color:#EF9A9A">${minV}</strong>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px">
+      <span style="color:var(--dim)">Maks:</span> <strong style="color:#66BB6A">${maxV}</strong>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px">
+      <span style="color:var(--dim)">Rata-rata:</span> <strong style="color:#64B5F6">${avg.toFixed(2)}</strong>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px">
+      <span style="color:var(--dim)">Satuan:</span> <strong style="color:var(--gold)">${layer.unit}</strong>
+    </div>
+  </div>
+  <div class="de">
+    <div class="de-head"><span>${layer.label}</span><span style="font-size:10px;color:var(--dim)">33 Kecamatan Kab. Malang</span></div>
+    <table style="width:100%">
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center">#</th>
+          <th>Kecamatan</th>
+          <th>Nilai (${layer.unit})</th>
+          <th style="width:120px">Bar</th>
+        </tr>
+      </thead>
+      <tbody id="petaEditTBody">`;
+
+  vals.forEach((item, i) => {
+    const pct = maxV > 0 ? Math.round((item.v / maxV) * 100) : 0;
+    const isAboveAvg = layer.invert ? item.v < avg : item.v > avg;
+    const barColor = isAboveAvg ? '#1976D2' : '#E53935';
+    html += `
+      <tr id="pet-row-${i}" style="transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
+        <td style="text-align:center;font-size:10px;color:var(--dim);padding:5px 8px">${i}</td>
+        <td style="padding:5px 8px;font-size:12.5px;font-weight:600;color:var(--text)">${KEC_NAMES[i]}</td>
+        <td style="padding:5px 8px">
+          <input class="ei" id="pev-${i}" type="number" step="any" value="${item.v}"
+            style="width:100%;max-width:130px"
+            oninput="updatePetaBar(${i}, ${maxV})"
+            onchange="updatePetaStats()">
+        </td>
+        <td style="padding:5px 10px">
+          <div style="height:6px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden">
+            <div id="pebar-${i}" style="height:100%;width:${pct}%;background:${barColor};border-radius:10px;transition:width .3s"></div>
+          </div>
+          <div id="pepct-${i}" style="font-size:9px;color:var(--dim);margin-top:2px">${pct}%</div>
+        </td>
+      </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('petaEditBody').innerHTML = html;
+}
+
+function updatePetaBar(idx, currentMax) {
+  const inp = document.getElementById('pev-'+idx);
+  if(!inp) return;
+  const val = parseFloat(inp.value) || 0;
+  // Recalculate max from all inputs
+  let newMax = 0;
+  KEC_NAMES.forEach((_,i) => {
+    const v = parseFloat(document.getElementById('pev-'+i)?.value) || 0;
+    if(v > newMax) newMax = v;
+  });
+  if(newMax === 0) newMax = 1;
+  // Update all bars
+  KEC_NAMES.forEach((_,i) => {
+    const v = parseFloat(document.getElementById('pev-'+i)?.value) || 0;
+    const pct = Math.round((v/newMax)*100);
+    const bar = document.getElementById('pebar-'+i);
+    const pctEl = document.getElementById('pepct-'+i);
+    if(bar) bar.style.width = pct + '%';
+    if(pctEl) pctEl.textContent = pct + '%';
+  });
+}
+
+function updatePetaStats() {
+  const layer = LAYER_DATA[petaEditLayer];
+  const vals = KEC_NAMES.map((_,i) => parseFloat(document.getElementById('pev-'+i)?.value)||0);
+  const avg = vals.reduce((s,v)=>s+v,0)/vals.length;
+  const maxV = Math.max(...vals), minV = Math.min(...vals);
+  // Update stat badges
+  const statsDiv = document.querySelector('#petaEditBody > div:first-child');
+  if(statsDiv) {
+    statsDiv.querySelectorAll('strong')[0].textContent = minV;
+    statsDiv.querySelectorAll('strong')[1].textContent = maxV;
+    statsDiv.querySelectorAll('strong')[2].textContent = avg.toFixed(2);
+  }
+}
+
+function applyPetaEdit() {
+  const layer = LAYER_DATA[petaEditLayer];
+  let anyChanged = false;
+  KEC_NAMES.forEach((_,i) => {
+    const inp = document.getElementById('pev-'+i);
+    if(inp) {
+      const newVal = parseFloat(inp.value);
+      if(!isNaN(newVal)) {
+        if(layer.values[i].v !== newVal) anyChanged = true;
+        layer.values[i].v = newVal;
+      }
+    }
+  });
+  // Update peta aktif ke layer yang baru diedit
+  petaActiveLayer = petaEditLayer;
+  // Highlight layer button
+  document.querySelectorAll('.peta-layer-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.layer === petaEditLayer);
+  });
+  // Redraw peta
+  if(leafletMap) drawPeta();
+  closePetaEdit();
+  toast('🗺️ Data layer ' + layer.label + ' berhasil diperbarui!');
+}
+
+function petaEditReset() {
+  const key = petaEditLayer;
+  if(!LAYER_DATA_ORIGINAL[key]) return;
+  if(!confirm('Reset data layer "' + LAYER_DATA[key].label + '" ke nilai awal?')) return;
+  LAYER_DATA[key].values = LAYER_DATA_ORIGINAL[key].map(v=>({v}));
+  renderPetaEditTable(key);
+  toast('↺ Layer ' + LAYER_DATA[key].label + ' direset ke nilai awal');
+}
+
+function petaEditCopyAll() {
+  const vals = KEC_NAMES.map((nm,i) => {
+    const v = parseFloat(document.getElementById('pev-'+i)?.value)||0;
+    return nm + '\t' + v;
+  }).join('\n');
+  navigator.clipboard.writeText(vals).then(()=>toast('📄 Data disalin ke clipboard!')).catch(()=>{
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = vals; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); toast('📄 Data disalin!');
+  });
+}
+
+function petaEditPasteExcel() {
+  document.getElementById('petaPasteArea').value = '';
+  document.getElementById('petaPasteMsg').style.display = 'none';
+  document.getElementById('petaPasteModal').classList.add('on');
+}
+
+function closePetaPaste() {
+  document.getElementById('petaPasteModal').classList.remove('on');
+}
+
+function processPetaPaste() {
+  const raw = document.getElementById('petaPasteArea').value.trim();
+  if(!raw) { showPasteMsg('error','Data kosong!'); return; }
+  const lines = raw.split('\n').filter(l=>l.trim());
+  let matched = 0, notFound = [];
+  lines.forEach(line => {
+    const parts = line.split(/\t|;|,/).map(s=>s.trim());
+    if(parts.length < 2) return;
+    const kecName = parts[0].toLowerCase();
+    const val = parseFloat(parts[parts.length-1].replace(',','.'));
+    if(isNaN(val)) return;
+    // Find matching kecamatan (flexible matching)
+    const idx = KEC_NAMES.findIndex(nm => {
+      const n = nm.toLowerCase();
+      return n === kecName || n.includes(kecName) || kecName.includes(n);
+    });
+    if(idx >= 0) {
+      const inp = document.getElementById('pev-'+idx);
+      if(inp) { inp.value = val; matched++; }
+    } else {
+      notFound.push(parts[0]);
+    }
+  });
+  updatePetaStats();
+  updatePetaBar(0, 1);
+  if(matched > 0) {
+    const msg = matched + ' kecamatan berhasil diisi' + (notFound.length ? '. Tidak ditemukan: ' + notFound.join(', ') : '.');
+    showPasteMsg(notFound.length ? 'warn' : 'ok', msg);
+    setTimeout(()=>closePetaPaste(), 1800);
+  } else {
+    showPasteMsg('error', 'Tidak ada kecamatan yang cocok. Periksa format data.');
+  }
+}
+
+function showPasteMsg(type, msg) {
+  const el = document.getElementById('petaPasteMsg');
+  el.style.display = 'block';
+  el.style.padding = '8px 12px';
+  el.style.borderRadius = '7px';
+  el.style.fontSize = '11.5px';
+  if(type==='ok') { el.style.background='rgba(46,125,50,.15)'; el.style.border='1px solid rgba(46,125,50,.3)'; el.style.color='#81C784'; }
+  else if(type==='warn') { el.style.background='rgba(249,168,37,.1)'; el.style.border='1px solid rgba(249,168,37,.3)'; el.style.color='#F9A825'; }
+  else { el.style.background='rgba(229,57,53,.15)'; el.style.border='1px solid rgba(229,57,53,.3)'; el.style.color='#EF9A9A'; }
+  el.textContent = msg;
+}
+
+
+</script>
+
+<!-- MODAL EDIT LAYER PETA -->
+<div class="overlay" id="petaEditModal" onclick="if(event.target===this)closePetaEdit()">
+  <div class="modal" style="width:820px;max-width:98vw">
+    <div class="mh">
+      <div>
+        <div class="mh-title" id="petaEditTitle">✏️ Edit Data Layer Peta</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px" id="petaEditSub">Ubah nilai per kecamatan untuk layer aktif</div>
+      </div>
+      <button class="mx" onclick="closePetaEdit()">✕</button>
+    </div>
+    <!-- Layer selector inside modal -->
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Pilih Layer:</span>
+      <button class="peta-layer-btn active" id="pe-btn-umkm" onclick="switchPetaEditLayer('umkm',this)">🏪 UMKM</button>
+      <button class="peta-layer-btn" id="pe-btn-kemiskinan" onclick="switchPetaEditLayer('kemiskinan',this)">👥 Kemiskinan</button>
+      <button class="peta-layer-btn" id="pe-btn-padi" onclick="switchPetaEditLayer('padi',this)">🌾 Padi</button>
+      <button class="peta-layer-btn" id="pe-btn-perikanan" onclick="switchPetaEditLayer('perikanan',this)">🐟 Perikanan</button>
+      <button class="peta-layer-btn" id="pe-btn-peternakan" onclick="switchPetaEditLayer('peternakan',this)">🐄 Peternakan</button>
+      <button class="peta-layer-btn" id="pe-btn-investasi" onclick="switchPetaEditLayer('investasi',this)">💼 Investasi</button>
+      <button class="peta-layer-btn" id="pe-btn-pariwisata" onclick="switchPetaEditLayer('pariwisata',this)">🏖️ Pariwisata</button>
+      <button class="peta-layer-btn" id="pe-btn-tpt" onclick="switchPetaEditLayer('tpt',this)">🎯 Pengangguran</button>
+      <button class="peta-layer-btn" id="pe-btn-pbb" onclick="switchPetaEditLayer('pbb',this)">🏛️ PBB-P2</button>
+    </div>
+    <div class="mb" id="petaEditBody" style="padding:16px 20px;max-height:60vh;overflow-y:auto">
+      <!-- rendered by JS -->
+    </div>
+    <div class="mf" style="justify-content:space-between">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-s" onclick="petaEditPasteExcel()" title="Paste dari Excel/spreadsheet">📋 Paste dari Excel</button>
+        <button class="btn btn-s" onclick="petaEditCopyAll()" title="Salin semua nilai">📄 Salin Semua</button>
+        <button class="btn btn-s" onclick="petaEditReset()" style="color:#EF9A9A">↺ Reset Layer Ini</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s" onclick="closePetaEdit()">Batal</button>
+        <button class="btn btn-p" onclick="applyPetaEdit()">✓ Terapkan & Refresh Peta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PASTE EXCEL -->
+<div class="overlay" id="petaPasteModal" onclick="if(event.target===this)closePetaPaste()">
+  <div class="modal" style="width:560px">
+    <div class="mh">
+      <div class="mh-title">📋 Paste Data dari Excel</div>
+      <button class="mx" onclick="closePetaPaste()">✕</button>
+    </div>
+    <div class="mb">
+      <div class="hint">Paste 2 kolom dari Excel: <strong>Nama Kecamatan</strong> (kolom A) dan <strong>Nilai</strong> (kolom B). Sistem akan mencocokkan otomatis.</div>
+      <div style="margin-bottom:10px;font-size:11px;color:var(--muted)">Contoh format:</div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.8">
+        Kepanjen&nbsp;&nbsp;&nbsp;&nbsp;85.2<br>
+        Singosari&nbsp;&nbsp;&nbsp;142.8<br>
+        Lawang&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;78.4<br>
+        ...
+      </div>
+      <textarea id="petaPasteArea" style="width:100%;height:200px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:monospace;font-size:12px;resize:vertical;outline:none" placeholder="Paste data dari Excel di sini (Ctrl+V)..."></textarea>
+      <div id="petaPasteMsg" style="margin-top:8px;font-size:11px;display:none"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-s" onclick="closePetaPaste()">Batal</button>
+      <button class="btn btn-p" onclick="processPetaPaste()">✓ Proses & Isi Tabel</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
